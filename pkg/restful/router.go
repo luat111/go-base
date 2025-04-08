@@ -1,58 +1,75 @@
 package restful
 
 import (
+	"cmp"
 	"net/http"
 	"slices"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
 type Router struct {
-	mux.Router
+	*gin.RouterGroup
+	Engine           *gin.Engine
 	RegisteredRoutes *[]string
 }
 
 type Middleware func(handler http.Handler) http.Handler
 
-func NewRouter() *Router {
-	muxRouter := mux.NewRouter().StrictSlash(false)
+func NewRouter(prefixPath string) *Router {
+	gin.SetMode(gin.ReleaseMode)
+
+	router := gin.New()
+	baseGroup := router.Group(prefixPath)
+
 	routes := make([]string, 0)
 	r := &Router{
-		Router:           *muxRouter,
+		RouterGroup:      baseGroup,
 		RegisteredRoutes: &routes,
 	}
 
-	r.Router = *muxRouter
+	r.Engine = router
 
 	return r
-}
-
-func (rou *Router) Add(method, pattern string, handler http.Handler) {
-	rou.Router.NewRoute().Methods(method).Path(pattern).Handler(handler)
-}
-
-func (rou *Router) UseMiddleware(mws ...Middleware) {
-	middlewares := make([]mux.MiddlewareFunc, 0, len(mws))
-	for _, m := range mws {
-		middlewares = append(middlewares, mux.MiddlewareFunc(m))
-	}
-
-	rou.Use(middlewares...)
 }
 
 func (rou *Router) GetRouteMethod() []string {
 	var registeredMethods []string
 
-	rou.Walk(func(route *mux.Route, _ *mux.Router, _ []*mux.Route) error {
-		met, _ := route.GetMethods()
-		for _, method := range met {
-			if !slices.Contains(registeredMethods, method) {
-				registeredMethods = append(registeredMethods, method)
-			}
+	for _, r := range rou.Engine.Routes() {
+		if !slices.Contains(registeredMethods, r.Method) {
+			registeredMethods = append(registeredMethods, r.Method)
 		}
-
-		return nil
-	})
+	}
 
 	return registeredMethods
+}
+
+type RouteGroup struct {
+	RouterGroup *gin.RouterGroup
+	Pattern     string
+	Method      string
+	Handler     *Handler
+}
+
+func (rou *Router) Add(otp RouteGroup) {
+	group := cmp.Or(otp.RouterGroup, rou.RouterGroup)
+
+	var f func(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes
+
+	switch otp.Method {
+	case "GET":
+		f = group.GET
+	case "DELETE":
+		f = group.DELETE
+	case "PUT":
+		f = group.PUT
+	case "POST":
+		f = group.POST
+	case "PATCH":
+		f = group.PATCH
+	default:
+	}
+
+	f(otp.Pattern, gin.WrapH(otp.Handler))
 }

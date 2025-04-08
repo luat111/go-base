@@ -19,8 +19,9 @@ func New[EnvInterface any](envOption config.EnvOptions) *App[EnvInterface] {
 	if err != nil || port <= 0 {
 		port = common.DefaultHTTPPort
 	}
+	
+	app.httpServer = restful.NewHTTPServer(app.container, app.Config, port, make(map[string]string))
 
-	app.httpServer = restful.NewHTTPServer(port)
 
 	// GRPC Server
 	rpcPort, err := strconv.Atoi(app.Config.Get(config.RPC_PORT))

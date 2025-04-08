@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type RequestLog struct {
@@ -24,37 +26,35 @@ type StatusResponseWriter struct {
 	status int
 }
 
-func Logging(logger logger.ILogger) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-			srw := &StatusResponseWriter{ResponseWriter: rw}
+func Logging(logger logger.ILogger) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		start := time.Now()
+		srw := &StatusResponseWriter{ResponseWriter: c.Writer}
 
-			defer func(res *StatusResponseWriter, req *http.Request) {
-				l := RequestLog{
-					CorrelationId: tracing.FromContext(r.Context()),
-					StartTime:     start.Format("2006-01-02T15:04:05"),
-					ResponseTime:  time.Since(start),
-					Method:        req.Method,
-					URI:           req.RequestURI,
-					IP:            getIPAddress(req),
-					UserAgent:     req.UserAgent(),
-					Status:        res.status,
+		defer func(res *StatusResponseWriter, req *http.Request) {
+			l := RequestLog{
+				CorrelationId: tracing.FromContext(c.Request.Context()),
+				StartTime:     start.Format("2006-01-02T15:04:05"),
+				ResponseTime:  time.Since(start),
+				Method:        req.Method,
+				URI:           req.RequestURI,
+				IP:            getIPAddress(req),
+				UserAgent:     req.UserAgent(),
+				Status:        res.status,
+			}
+
+			if logger != nil {
+				if res.status >= http.StatusInternalServerError {
+					logger.Error("HTTP", "Message", l)
+				} else {
+					logger.Log("HTTP", "Message", l)
 				}
+			}
+		}(srw, c.Request)
 
-				if logger != nil {
-					if res.status >= http.StatusInternalServerError {
-						logger.Error("HTTP", "Message", l)
-					} else {
-						logger.Log("HTTP", "Message", l)
-					}
-				}
-			}(srw, r)
+		defer recover()
 
-			defer recover()
-
-			next.ServeHTTP(srw, r)
-		})
+		c.Next()
 	}
 }
 

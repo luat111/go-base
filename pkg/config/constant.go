@@ -4,4 +4,5 @@ const (
 	APP_NAME string = "APP_NAME"
 	PORT     string = "PORT"
 	RPC_PORT string = "RPC_PORT"
+	API_PATH string = "API_PATH"
 )

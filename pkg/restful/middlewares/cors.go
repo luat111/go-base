@@ -3,6 +3,8 @@ package middlewares
 import (
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -10,18 +12,16 @@ const (
 )
 
 // CORS is a middleware that adds CORS (Cross-Origin Resource Sharing) headers to the response.
-func CORS(middlewareConfigs map[string]string, routes *[]string) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			setMiddlewareHeaders(middlewareConfigs, *routes, w)
+func CORS(middlewareConfigs map[string]string, routes *[]string) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		setMiddlewareHeaders(middlewareConfigs, *routes, c.Writer)
 
-			if r.Method == http.MethodOptions {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusOK)
+			return
+		}
 
-			next.ServeHTTP(w, r)
-		})
+		c.Next()
 	}
 }
 

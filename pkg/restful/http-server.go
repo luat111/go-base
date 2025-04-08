@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"go-base/pkg/common/utils"
+	"go-base/pkg/config"
 	"go-base/pkg/container"
 	"go-base/pkg/restful/middlewares"
 	"go-base/pkg/tracing"
 	"net/http"
 	"time"
-
-	"github.com/unrolled/secure"
 )
 
 type HttpServer struct {
@@ -19,16 +18,36 @@ type HttpServer struct {
 	Router *Router
 }
 
-func NewHTTPServer(Port int) *HttpServer {
-	r := NewRouter()
+func NewHTTPServer(
+	c *container.Container,
+	cnf config.Config,
+	port int,
+	middlewareConfigs map[string]string,
+) *HttpServer {
+	correlationSvc := tracing.New()
+	prefixPath := cnf.Get(config.API_PATH)
+
+	r := NewRouter(prefixPath)
+
+	r.Use(
+		// 	middleware.WSHandlerUpgrade(c, s.ws),
+		// 	middleware.Tracer,
+		middlewares.CORS(middlewareConfigs, r.RegisteredRoutes),
+		middlewares.SecureMiddleware,
+		correlationSvc.CorrelationMiddleware,
+		middlewares.Logging(c.Logger),
+		middlewares.AttachParams,
+		middlewares.TimeoutMiddleware(cnf),
+	// 	middleware.Metrics(c.Metrics()),
+	)
 
 	return &HttpServer{
 		Router: r,
-		Port:   Port,
+		Port:   port,
 	}
 }
 
-func (s *HttpServer) Run(c *container.Container, middlewareConfigs map[string]string) {
+func (s *HttpServer) Run(c *container.Container, config config.Config) {
 
 	/* Developer Note:
 	*	WebSocket connections do not inherently support authentication mechanisms.
@@ -38,25 +57,9 @@ func (s *HttpServer) Run(c *container.Container, middlewareConfigs map[string]st
 	*	the connection to WebSocket, if any.
 	 */
 
-	correlationSvc := tracing.New()
-	secureMiddleware := secure.New(secure.Options{
-		FrameDeny:        true,
-		BrowserXssFilter: true,
-	})
-
-	s.Router.Use(
-		// 	middleware.WSHandlerUpgrade(c, s.ws),
-		// 	middleware.Tracer,
-		middlewares.CORS(middlewareConfigs, s.Router.RegisteredRoutes),
-		secureMiddleware.Handler,
-		correlationSvc.CorrelationMiddleware,
-		middlewares.Logging(c.Logger),
-	// 	middleware.Metrics(c.Metrics()),
-	)
-
 	s.Server = &http.Server{
 		Addr:              fmt.Sprintf(":%d", s.Port),
-		Handler:           s.Router,
+		Handler:           s.Router.Engine,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

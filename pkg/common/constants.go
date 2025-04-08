@@ -6,4 +6,5 @@ const (
 	CheckPortTimeout time.Duration = 2 * time.Second
 	DefaultTimeOut   time.Duration = 10 * time.Second
 	DefaultHTTPPort  int           = 3000
+	ReqParams        string        = "req_params"
 )

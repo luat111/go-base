@@ -79,8 +79,10 @@ func main() {
 	app.ConnectClients(map[string]string{"test": ":3003"})
 	helloService := NewHelloService(app.GetClient("test"))
 
-	app.GET("/test", HelloHandler(helloService))
-	app.POST("/test/{name}", new(UpdatePasswordData), TestPostHandler)
+	group := app.Group("v1")
+
+	app.GET(group, "/test", HelloHandler(helloService))
+	app.POST(group, "/test/:name/:test", new(UpdatePasswordData), TestPostHandler)
 
 	app.Run()
 }

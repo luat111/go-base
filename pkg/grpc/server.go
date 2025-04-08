@@ -7,10 +7,12 @@ import (
 	"go-base/pkg/logger"
 	"net"
 	"strconv"
+	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 )
 
 type GrpcServer struct {
@@ -24,6 +26,12 @@ type GrpcServer struct {
 func NewGRPCServer(ctn *container.Container, port int) *GrpcServer {
 	return &GrpcServer{
 		Server: grpc.NewServer(
+			grpc.KeepaliveEnforcementPolicy(
+				keepalive.EnforcementPolicy{
+					MinTime:             5 * time.Second,
+					PermitWithoutStream: true,
+				},
+			),
 			grpc.UnaryInterceptor(
 				grpc_middleware.ChainUnaryServer(
 					grpc_recovery.UnaryServerInterceptor(),

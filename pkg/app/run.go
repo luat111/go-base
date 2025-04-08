@@ -41,7 +41,7 @@ func (a *App[EnvInterface]) startServer() {
 
 		go func(s *restful.HttpServer) {
 			defer wg.Done()
-			s.Run(a.container, make(map[string]string))
+			s.Run(a.container, a.Config)
 		}(a.httpServer)
 	}
 

@@ -6,21 +6,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go-base/pkg/common"
 	"io"
 	"net/http"
 	"strings"
-
-	"github.com/gorilla/mux"
 )
 
 const (
-	// defaultMaxMemory = 32 << 20 // 32 MB
+// defaultMaxMemory = 32 << 20 // 32 MB
 )
 
 var (
 	// errNoFileFound    = errors.New("no files were bounded")
 	// errNonPointerBind = errors.New("bind error, cannot bind to a non pointer type")
-	errNonSliceBind   = errors.New("bind error: input is not a pointer to a byte slice")
+	errNonSliceBind = errors.New("bind error: input is not a pointer to a byte slice")
 )
 
 type IRequest interface {
@@ -33,14 +32,12 @@ type IRequest interface {
 }
 
 type Request struct {
-	req        *http.Request
-	pathParams map[string]string
+	req *http.Request
 }
 
 func NewRequest(r *http.Request) *Request {
 	return &Request{
-		req:        r,
-		pathParams: mux.Vars(r),
+		req: r,
 	}
 }
 
@@ -53,7 +50,13 @@ func (r *Request) Context() context.Context {
 }
 
 func (r *Request) PathParam(key string) string {
-	return r.pathParams[key]
+	params, ok := r.Context().Value(common.ReqParams).(map[string]string)
+
+	if !ok || params == nil {
+		return ""
+	}
+
+	return params[key]
 }
 
 func (r *Request) Bind(i any) error {

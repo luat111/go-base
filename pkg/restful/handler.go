@@ -9,7 +9,6 @@ import (
 	"go-base/pkg/logger"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -19,10 +18,9 @@ var reqValidator = validator.New()
 type HandlerFn func(c *Context) (any, error)
 
 type Handler struct {
-	Function       HandlerFn
-	Container      *container.Container
-	RequestTimeout time.Duration
-	ValidatedBody  any
+	Function      HandlerFn
+	Container     *container.Container
+	ValidatedBody any
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

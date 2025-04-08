@@ -2,8 +2,8 @@ package tracing
 
 import (
 	"context"
-	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
@@ -28,17 +28,17 @@ func New() CorrelationIDService {
 	}
 }
 
-func (m *CorrelationIDService) CorrelationMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		headerName := m.getHeaderName()
-		corrId := r.Header.Get(headerName)
-		if corrId == "" && m.EnforceHeader {
-			corrId = m.generateId()
-		}
+func (m *CorrelationIDService) CorrelationMiddleware(c *gin.Context) {
+	headerName := m.getHeaderName()
+	corrId := c.Request.Header.Get(headerName)
+	if corrId == "" && m.EnforceHeader {
+		corrId = m.generateId()
+	}
 
-		updCtx := WithCorrelationId(r.Context(), corrId)
-		next.ServeHTTP(rw, r.WithContext(updCtx))
-	})
+	updCtx := WithCorrelationId(c.Request.Context(), corrId)
+	c.Request = c.Request.WithContext(updCtx)
+
+	c.Next()
 }
 
 func FromContext(ctx context.Context) string {

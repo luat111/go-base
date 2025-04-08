@@ -47,8 +47,8 @@ func main() {
 	}
 
 	app := app.New[AppConfig](appEnv)
-
-	app.GET("/test", HelloHandler)
+	group := app.Group("v1")
+	app.GET(group, "/test", HelloHandler)
 
 	proto.RegisterHelloServer(app, test.NewHelloService())
 
