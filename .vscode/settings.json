@@ -1,3 +1,10 @@
 {
-  "cSpell.words": ["gorm", "httpservice", "mapstructure"]
+  "cSpell.words": [
+    "amqp",
+    "errgroup",
+    "gorm",
+    "httpservice",
+    "mapstructure",
+    "rabbitmq"
+  ]
 }
