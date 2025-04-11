@@ -1,4 +1,4 @@
-package rabbit
+package mq
 
 import (
 	"go-base/pkg/logger"
@@ -6,12 +6,9 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 )
 
-type HandlerFunc func(body []byte, metadata map[string]string)
-
 type Queue struct {
 	*amqp091.Queue
-	Channel    *Channel
-	BoundRoute map[string]HandlerFunc
+	Channel *Channel
 }
 
 func newQueue(channel *Channel, logger logger.ILogger, name string) (*Queue, error) {
@@ -28,10 +25,6 @@ func newQueue(channel *Channel, logger logger.ILogger, name string) (*Queue, err
 	}, nil
 }
 
-func (q *Queue) BindQueue(exchange *Exchange, route string, handler HandlerFunc) error {
-	if exchange == nil {
-		return nil
-	}
-
-	return nil
+func generateQueueName(name string) string {
+	return name + "_QUEUE"
 }

@@ -6,19 +6,22 @@ import (
 	"go-base/pkg/datasource/postgres"
 	"go-base/pkg/datasource/redis"
 	"go-base/pkg/logger"
+	"go-base/pkg/mq"
 	"reflect"
+	"strconv"
 )
 
 type Container struct {
-	Logger logger.ILogger
-
 	appName string
+
+	Logger logger.ILogger
 
 	// metricsManager metrics.Manager
 	// PubSub         pubsub.Client
 
 	Redis *redis.Redis
 	DB    *postgres.DB
+	MQ    *mq.RabbitClient
 
 	// Mongo      Mongo
 }
@@ -47,6 +50,18 @@ func (c *Container) Create(conf config.Config) {
 
 	c.DB = postgres.New(conf, c.Logger)
 	c.Redis = redis.New(conf, c.Logger)
+
+	mqHost := conf.Get(config.RMQ_HOST)
+	if mqHost != "" {
+		c.MQ = mq.New(conf, c.Logger)
+		autoAck, err := strconv.ParseBool(conf.Get(config.RMQ_ACK))
+
+		if err != nil {
+			autoAck = true
+		}
+
+		c.MQ.Init(c.appName, autoAck)
+	}
 }
 
 func (c *Container) Close() error {
@@ -60,9 +75,9 @@ func (c *Container) Close() error {
 		err = errors.Join(err, c.Redis.Close())
 	}
 
-	// if !isNil(c.PubSub) {
-	// 	err = errors.Join(err, c.PubSub.Close())
-	// }
+	if !isNil(c.MQ) {
+		err = errors.Join(err, c.MQ.Close())
+	}
 
 	return err
 }

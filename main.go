@@ -6,6 +6,7 @@ import (
 	"go-base/pkg/app"
 	"go-base/pkg/config"
 	rpc "go-base/pkg/grpc"
+	"go-base/pkg/mq"
 	"go-base/pkg/restful"
 	"go-base/proto"
 
@@ -69,6 +70,10 @@ func TestPostHandler(c *restful.Context) (any, error) {
 	return true, nil
 }
 
+func test(body []byte, metadata map[string]string) {
+	fmt.Println(body, metadata)
+}
+
 func main() {
 	appEnv := config.EnvOptions{
 		Path: "/", EnvInterface: AppConfig{},
@@ -83,6 +88,10 @@ func main() {
 
 	app.GET(group, "/test", HelloHandler(helloService))
 	app.POST(group, "/test/:name/:test", new(UpdatePasswordData), TestPostHandler)
+
+	app.ListenRMQ(map[string]mq.HandlerFunc{
+		"test": test,
+	})
 
 	app.Run()
 }

@@ -1,12 +1,12 @@
-package rabbit
+package mq
 
 import "go-base/pkg/logger"
 
 const topicExchange = "topic"
 
 type Exchange struct {
-	Channel      *Channel
-	ExchangeName string
+	Channel *Channel
+	Name    string
 }
 
 func newExchange(channel *Channel, logger logger.ILogger, name string) (*Exchange, error) {
@@ -18,7 +18,11 @@ func newExchange(channel *Channel, logger logger.ILogger, name string) (*Exchang
 	}
 
 	return &Exchange{
-		Channel:      channel,
-		ExchangeName: name,
+		Channel: channel,
+		Name:    name,
 	}, nil
+}
+
+func generateExchangeName(name string) string {
+	return name + "_EXCHANGE"
 }

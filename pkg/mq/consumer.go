@@ -1,26 +1,33 @@
-package rabbit
+package mq
 
 import (
 	"context"
+	"encoding/json"
 	"go-base/pkg/logger"
+	"go-base/pkg/tracing"
+	"time"
 
 	"github.com/rabbitmq/amqp091-go"
 	"golang.org/x/sync/errgroup"
 )
 
+type HandlerFunc func(body []byte, metadata map[string]string)
+
 type Consumer struct {
-	Channel      *Channel
-	Exchange     *Exchange
-	Queue        *Queue
-	AutoAck      bool
-	AckOnConsume bool
-	Logger       logger.ILogger
+	Channel  *Channel
+	Exchange *Exchange
+	Queue    *Queue
+	AutoAck  bool
+
+	Logger logger.ILogger
+
+	BoundRoute map[string]HandlerFunc
 }
 
-func NewConsumer(
+func newConsumer(
 	client *RabbitClient,
 	exchangeName, queueName string,
-	autoAck, ackOnConsume bool,
+	autoAck bool,
 ) *Consumer {
 	channel, _ := newChannel(client)
 
@@ -46,15 +53,31 @@ func NewConsumer(
 		return nil
 	}
 
-	return &Consumer{
-		Channel:      channel,
-		Exchange:     exchange,
-		Queue:        queue,
-		AutoAck:      autoAck,
-		AckOnConsume: ackOnConsume,
-		Logger:       client.Logger,
+	consumer := &Consumer{
+		Channel:    channel,
+		Exchange:   exchange,
+		Queue:      queue,
+		AutoAck:    autoAck,
+		Logger:     client.Logger,
+		BoundRoute: make(map[string]HandlerFunc),
 	}
 
+	client.Consumer = consumer
+
+	return consumer
+}
+
+func (c *Consumer) BindQueue(route string, handler HandlerFunc) error {
+	err := c.Channel.QueueBind(c.Queue.Name, route, c.Exchange.Name, false, nil)
+
+	if err != nil {
+		c.Logger.Error("Bind queue failed", "route", route, "err", err)
+		return err
+	}
+
+	c.BoundRoute[route] = handler
+
+	return err
 }
 
 func (c *Consumer) Consume() {
@@ -80,14 +103,27 @@ func (c *Consumer) Consume() {
 
 func (c *Consumer) ConsumeData(ctx context.Context, messages <-chan amqp091.Delivery) {
 	for msg := range messages {
-		handler := c.Queue.BoundRoute[msg.RoutingKey]
+		handler := c.BoundRoute[msg.RoutingKey]
 
 		if handler != nil {
-			if c.AckOnConsume && !c.AutoAck {
+			if !c.AutoAck {
 				msg.Ack(false)
 			}
 
 			metadata := TableToMap(msg.Headers)
+
+			var data any
+			json.Unmarshal(msg.Body, &data)
+
+			logMsg := formatError(
+				metadata[string(tracing.DefaultHeaderName)],
+				ConsumeAction,
+				time.Now(),
+				data,
+				nil,
+			)
+
+			c.Logger.Info("Receive message", "Message", logMsg)
 
 			handler(msg.Body, metadata)
 		}
