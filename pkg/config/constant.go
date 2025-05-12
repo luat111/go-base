@@ -8,4 +8,5 @@ const (
 
 	RMQ_HOST string = "RMQ_HOST"
 	RMQ_ACK  string = "RMQ_ACK"
+	PUBSUB   string = "PUBSUB_BACKEND"
 )

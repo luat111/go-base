@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"go-base/pkg/logger"
-	"go-base/pkg/pubsub"
 	"go-base/pkg/tracing"
 	"time"
 
@@ -25,7 +24,7 @@ func newProducer(client *RabbitClient) *Producer {
 	return producer
 }
 
-func (p *Producer) Publish(ctx context.Context, msg *pubsub.Message) error {
+func (p *Producer) Publish(ctx context.Context, msg *Message) error {
 	cId := tracing.FromContext(ctx)
 	msg.Headers[string(tracing.DefaultHeaderName)] = cId
 

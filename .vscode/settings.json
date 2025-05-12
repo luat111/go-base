@@ -5,6 +5,7 @@
     "gorm",
     "httpservice",
     "mapstructure",
-    "rabbitmq"
+    "rabbitmq",
+    "segmentio"
   ]
 }

@@ -2,17 +2,17 @@ package pubsub
 
 import "context"
 
-type Producer interface {
-	Publish(ctx context.Context, msg Message) error
+type Writer interface {
+	Publish(ctx context.Context, topic string, message []byte) error
 }
 
-type Consumer interface {
-	Consume(ctx context.Context) (*Message, error)
+type Reader interface {
+	Subscribe(ctx context.Context, topic string) (*Message, error)
 }
 
 type Client interface {
-	Producer
-	Consumer
+	Writer
+	Reader
 
 	CreateTopic(context context.Context, name string) error
 	DeleteTopic(context context.Context, name string) error
@@ -20,9 +20,6 @@ type Client interface {
 	Close() error
 }
 
-type Message struct {
-	ExchangeName string
-	Route        string
-	Body         any
-	Headers      map[string]string
+type Committer interface {
+	Commit()
 }

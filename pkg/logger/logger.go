@@ -13,6 +13,7 @@ type ILogger interface {
 	Debug(msg any, args ...any)
 	Info(msg any, args ...any)
 	Warn(msg any, args ...any)
+	Debugf(string, ...any)
 }
 
 type LogMessage struct {
@@ -51,5 +52,9 @@ func (l *Logger) Info(msg any, args ...any) {
 }
 
 func (l *Logger) Warn(msg any, args ...any) {
+	l.Logger.Warn(msg, args...)
+}
+
+func (l *Logger) Debugf(msg string, args ...any) {
 	l.Logger.Warn(msg, args...)
 }

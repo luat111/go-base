@@ -7,6 +7,7 @@ import (
 	"go-base/pkg/datasource/redis"
 	"go-base/pkg/logger"
 	"go-base/pkg/mq"
+	"go-base/pkg/pubsub"
 	"reflect"
 	"strconv"
 )
@@ -17,7 +18,7 @@ type Container struct {
 	Logger logger.ILogger
 
 	// metricsManager metrics.Manager
-	// PubSub         pubsub.Client
+	PubSub pubsub.Client
 
 	Redis *redis.Redis
 	DB    *postgres.DB
@@ -62,6 +63,8 @@ func (c *Container) Create(conf config.Config) {
 
 		c.MQ.Init(c.appName, autoAck)
 	}
+
+	c.PubSub = NewPubsub(conf, c.Logger)
 }
 
 func (c *Container) Close() error {
@@ -77,6 +80,10 @@ func (c *Container) Close() error {
 
 	if !isNil(c.MQ) {
 		err = errors.Join(err, c.MQ.Close())
+	}
+
+	if !isNil(c.PubSub) {
+		err = errors.Join(err, c.PubSub.Close())
 	}
 
 	return err
