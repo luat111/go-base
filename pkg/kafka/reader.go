@@ -19,11 +19,11 @@ type ReaderConfig struct {
 	Key            string
 }
 
-func newKafkaReader(c *ReaderConfig, dialer *kafka.Dialer) *kafka.Reader {
+func newKafkaReader(c *ReaderConfig, dialer *kafka.Dialer, topic string) *kafka.Reader {
 	c2 := kafka.ReaderConfig{
 		Brokers: c.Brokers,
 		GroupID: c.GroupID,
-		Topic:   c.Topic,
+		Topic:   topic,
 		Dialer:  dialer,
 	}
 	if c.CommitInterval != nil {

@@ -12,7 +12,7 @@ import (
 type HandlerFunc func(context.Context, []byte, map[string]string)
 
 type KafkaClient struct {
-	*Consumer
+	consumers map[string]*Consumer
 	*Producer
 
 	conn   *multiConn
@@ -68,16 +68,24 @@ func (k *KafkaClient) InitProducer(conf config.Config) error {
 	return nil
 }
 
-func (k *KafkaClient) InitConsumer(conf config.Config, autoAck bool) error {
-	consumer, err := NewConsumer(k.conn, conf, k.Logger, autoAck)
+func (k *KafkaClient) InitConsumer(conf config.Config, topic string, handler HandlerFunc, autoAck bool) error {
+	consumer, err := NewConsumer(k.conn, conf, k.Logger, topic, handler, autoAck)
 
 	if err != nil {
 		return err
 	}
 
-	k.Consumer = consumer
+	k.consumers[topic] = consumer
 
 	k.Logger.Log("Kafka Consumer initialized")
 
 	return nil
+}
+
+func (k *KafkaClient) StartConsume() {
+	for _, consumer := range k.consumers {
+		consumer.Consume()
+	}
+
+	k.Logger.Log("Consuming kafka message")
 }

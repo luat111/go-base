@@ -16,43 +16,52 @@ type Consumer struct {
 	Reader       *kafka.Reader
 	Logger       logger.ILogger
 	AckOnConsume bool
-	Key          string
+	Apply        HandlerFunc
 }
 
-func NewConsumer(conns *multiConn, conf config.Config, logger logger.ILogger, autoAck bool) (*Consumer, error) {
+func NewConsumer(
+	conns *multiConn,
+	conf config.Config,
+	logger logger.ILogger,
+	topic string,
+	handler HandlerFunc,
+	autoAck bool,
+) (*Consumer, error) {
 	readerCnf := getReaderConfig(conf)
-	reader := newKafkaReader(readerCnf, conns.dialer)
+	reader := newKafkaReader(readerCnf, conns.dialer, topic)
 
 	return &Consumer{
 		ReaderConfig: readerCnf,
 		Reader:       reader,
 		Logger:       logger,
 		AckOnConsume: autoAck,
-		Key:          readerCnf.Key,
+		Apply:        handler,
 	}, nil
 }
 
-func (c *Consumer) Consume(ctx context.Context, fn HandlerFunc) {
+func (c *Consumer) Consume() {
 	for {
+		ctx := context.Background()
 		msg, err := c.Reader.FetchMessage(ctx)
 
 		if err != nil {
 			c.Logger.Error("Error when read", "err", err.Error())
 		} else {
 			attributes := headerToMap(msg.Headers)
+			correlationId := attributes[string(tracing.DefaultHeaderName)]
 
 			var data any
 			json.Unmarshal(msg.Value, &data)
 			logMsg := formatError(
-				attributes[string(tracing.DefaultHeaderName)],
+				correlationId,
 				ConsumeAction,
 				time.Now(),
 				data,
 				nil,
 			)
 
-			if len(c.Key) > 0 && msg.Key != nil {
-				ctx = context.WithValue(ctx, c.Key, string(msg.Key))
+			if correlationId != "" {
+				ctx = context.WithValue(ctx, tracing.DefaultHeaderName, correlationId)
 			}
 
 			if c.AckOnConsume {
@@ -61,7 +70,7 @@ func (c *Consumer) Consume(ctx context.Context, fn HandlerFunc) {
 
 			c.Logger.Info("Receive message", "Message", logMsg)
 
-			fn(ctx, msg.Value, attributes)
+			c.Apply(ctx, msg.Value, attributes)
 		}
 	}
 }
