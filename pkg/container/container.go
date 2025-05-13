@@ -5,11 +5,11 @@ import (
 	"go-base/pkg/config"
 	"go-base/pkg/datasource/postgres"
 	"go-base/pkg/datasource/redis"
+	"go-base/pkg/kafka"
 	"go-base/pkg/logger"
 	"go-base/pkg/mq"
 	"go-base/pkg/pubsub"
 	"reflect"
-	"strconv"
 )
 
 type Container struct {
@@ -23,6 +23,7 @@ type Container struct {
 	Redis *redis.Redis
 	DB    *postgres.DB
 	MQ    *mq.RabbitClient
+	Kafka *kafka.KafkaClient
 
 	// Mongo      Mongo
 }
@@ -52,17 +53,8 @@ func (c *Container) Create(conf config.Config) {
 	c.DB = postgres.New(conf, c.Logger)
 	c.Redis = redis.New(conf, c.Logger)
 
-	mqHost := conf.Get(config.RMQ_HOST)
-	if mqHost != "" {
-		c.MQ = mq.New(conf, c.Logger)
-		autoAck, err := strconv.ParseBool(conf.Get(config.RMQ_ACK))
-
-		if err != nil {
-			autoAck = true
-		}
-
-		c.MQ.Init(c.appName, autoAck)
-	}
+	c.initMQ(conf)
+	c.initKafka(conf)
 
 	c.PubSub = NewPubsub(conf, c.Logger)
 }

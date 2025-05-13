@@ -18,6 +18,24 @@ func setupDialer(conf *Config) (*kafka.Dialer, error) {
 		DualStack: true,
 	}
 
+	// if conf.SecurityProtocol == protocolSASL || conf.SecurityProtocol == protocolSASLSSL {
+	// 	mechanism, err := getSASLMechanism(conf.SASLMechanism, conf.SASLUser, conf.SASLPassword)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// 	dialer.SASLMechanism = mechanism
+	// }
+
+	// if conf.SecurityProtocol == "SSL" || conf.SecurityProtocol == "SASL_SSL" {
+	// 	tlsConfig, err := createTLSConfig(&conf.TLS)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// 	dialer.TLS = tlsConfig
+	// }
+
 	return dialer, nil
 }
 

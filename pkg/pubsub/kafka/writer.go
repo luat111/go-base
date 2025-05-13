@@ -28,12 +28,16 @@ func (k *KafkaClient) Publish(ctx context.Context, topic string, message []byte)
 		return errPublisherNotConfigured
 	}
 
+	headers := make(map[string]string)
+	headers[string(tracing.DefaultHeaderName)] = trackingId
+
 	start := time.Now()
 	err := k.writer.WriteMessages(ctx,
 		kafka.Message{
-			Topic: topic,
-			Value: message,
-			Time:  time.Now(),
+			Topic:   topic,
+			Value:   message,
+			Time:    time.Now(),
+			Headers: mapToHeader(headers),
 		},
 	)
 	end := time.Since(start)

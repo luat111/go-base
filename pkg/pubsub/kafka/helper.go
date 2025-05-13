@@ -1,6 +1,10 @@
 package kafka
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/segmentio/kafka-go"
+)
 
 func validateConfigs(conf *Config) error {
 	if err := validateRequiredFields(conf); err != nil {
@@ -28,4 +32,13 @@ func validateRequiredFields(conf *Config) error {
 	}
 
 	return nil
+}
+
+func mapToHeader(attributes map[string]string) []kafka.Header {
+	headers := make([]kafka.Header, 0)
+	for k, v := range attributes {
+		h := kafka.Header{Key: k, Value: []byte(v)}
+		headers = append(headers, h)
+	}
+	return headers
 }
