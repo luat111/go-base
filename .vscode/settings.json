@@ -6,6 +6,7 @@
     "httpservice",
     "mapstructure",
     "rabbitmq",
+    "redislock",
     "segmentio"
   ]
 }
