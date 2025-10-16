@@ -2,14 +2,14 @@
 
 -   [ ] Auth System
 -   [ ] Auth Social ( missing env )
--   [x] Cache ( Lock )
+-   [x] Cache ( Lock, Data Layer Service )
 -   [x] Amqp
 -   [x] Kafka
 -   [x] DTO
 -   [x] Error handler
 -   [ ] Translate
 -   [x] Logging (ELK - take too much resource, DB logger: TODO save error query to DB)
--   [ ] Base Repository (TODO: mongoose) - apply per repo per entity
+-   [x] Base Repository
 -   [ ] Encrypt Payload
 -   [ ] Audit
 -   [ ] Outbox message
