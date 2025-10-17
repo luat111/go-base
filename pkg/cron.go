@@ -1,48 +1,47 @@
 package pkg
 
 import (
-	"go-base/pkg/container"
+	"go-base/pkg/logger"
 	"sync"
 	"time"
 
 	"github.com/robfig/cron/v3"
 )
 
-type Crontab struct {
-	cron      *cron.Cron
-	container *container.Container
+type Cronjob struct {
+	cron   *cron.Cron
+	logger logger.ILogger
 
 	mu sync.RWMutex
 }
 
-func NewCron(ctn *container.Container) *Crontab {
-	c := &Crontab{
-		cron:      cron.New(),
-		container: ctn,
+func NewCron(logger logger.ILogger) *Cronjob {
+	c := &Cronjob{
+		cron:   cron.New(),
+		logger: logger,
 	}
 
 	return c
 }
 
-func (c *Crontab) AddJob(schedule, jobName string, fn func()) error {
-
+func (c *Cronjob) AddJob(schedule, jobName string, fn func()) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	_, err := c.cron.AddFunc(schedule, func() {
 		start := time.Now()
-		c.container.Logger.Info("Executing cron job:", jobName)
+		c.logger.Info("Executing cron job:", jobName)
 		fn()
-		c.container.Logger.Info("Job finished:", jobName, "Duration:", time.Since(start))
+		c.logger.Info("Job finished:", jobName, "Duration:", time.Since(start))
 	})
 
 	return err
 }
 
-func (c *Crontab) Run() {
+func (c *Cronjob) Run() {
 	c.cron.Start()
 }
 
-func (c *Crontab) Stop() {
+func (c *Cronjob) Stop() {
 	c.cron.Stop()
 }

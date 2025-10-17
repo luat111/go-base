@@ -14,15 +14,10 @@ type App[EnvInterface any] struct {
 	httpServer *restful.HttpServer
 	// metricServer *metricServer
 
-	// cron *Crontab
-
-	// container is unexported because this is an internal implementation and applications are provided access to it via Context
 	container *container.Container
 
 	grpcRegistered bool
 	httpRegistered bool
-
-	// subscriptionManager SubscriptionManager
 }
 
 func (a *App[EnvInterface]) LoadConfig(opt config.EnvOptions) {

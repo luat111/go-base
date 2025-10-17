@@ -14,7 +14,7 @@
 -   [ ] Audit
 -   [ ] Outbox message
 -   [ ] Circuit Breaker
--   [ ] Cron
+-   [x] Cron
 -   [x] GRpc
 -   [ ] CI/CD
 -   [ ] Monitor

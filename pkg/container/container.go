@@ -2,9 +2,11 @@ package container
 
 import (
 	"errors"
+	"go-base/pkg"
 	"go-base/pkg/config"
 	"go-base/pkg/datasource/postgres"
 	"go-base/pkg/datasource/redis"
+	"go-base/pkg/datasource/redis/lock"
 	"go-base/pkg/kafka"
 	"go-base/pkg/logger"
 	"go-base/pkg/mq"
@@ -20,10 +22,13 @@ type Container struct {
 	// metricsManager metrics.Manager
 	PubSub pubsub.Client
 
-	Redis *redis.Redis
-	DB    *postgres.DB
-	MQ    *mq.RabbitClient
-	Kafka *kafka.KafkaClient
+	Redis  *redis.Redis
+	Locker *lock.Locker
+	DB     *postgres.DB
+	MQ     *mq.RabbitClient
+	Kafka  *kafka.KafkaClient
+
+	cron *pkg.Cronjob
 
 	// Mongo      Mongo
 }
@@ -52,9 +57,11 @@ func (c *Container) Create(conf config.Config) {
 
 	c.DB = postgres.New(conf, c.Logger)
 	c.Redis = redis.New(conf, c.Logger)
+	c.Locker = lock.New(c.Redis)
 
 	c.initMQ(conf)
 	c.initKafka(conf)
+	c.StartCron()
 
 	c.PubSub = NewPubsub(conf, c.Logger)
 }
@@ -77,6 +84,8 @@ func (c *Container) Close() error {
 	if !isNil(c.PubSub) {
 		err = errors.Join(err, c.PubSub.Close())
 	}
+
+	c.StopCron()
 
 	return err
 }
