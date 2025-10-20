@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"go-base/pkg/common"
 	"go-base/pkg/common/utils"
 	"go-base/pkg/container"
 	"go-base/pkg/logger"
@@ -40,7 +41,7 @@ func NewGRPCServer(ctn *container.Container, port int) *GrpcServer {
 		Services:  make(map[string]*grpc.ClientConn),
 		port:      port,
 		container: ctn,
-		logger:    ctn.Logger,
+		logger:    logger.NewLogger(common.RPCPrefix),
 	}
 }
 

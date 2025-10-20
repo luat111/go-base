@@ -51,6 +51,11 @@ func (c *RabbitConnection) reconnect() error {
 }
 
 func (c *RabbitConnection) monitorConnection(l logger.ILogger) {
+	if c == nil {
+		l.Error("RabbitConnection is nil, cannot monitor")
+		return
+	}
+
 	notifyConnClose := c.Connection.NotifyClose(make(chan *amqp091.Error, 1))
 
 	for {

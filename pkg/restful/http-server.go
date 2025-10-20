@@ -3,9 +3,11 @@ package restful
 import (
 	"context"
 	"fmt"
+	"go-base/pkg/common"
 	"go-base/pkg/common/utils"
 	"go-base/pkg/config"
 	"go-base/pkg/container"
+	"go-base/pkg/logger"
 	"go-base/pkg/restful/middlewares"
 	"go-base/pkg/tracing"
 	"net/http"
@@ -16,6 +18,7 @@ type HttpServer struct {
 	Server *http.Server
 	Port   int
 	Router *Router
+	logger logger.ILogger
 }
 
 func NewHTTPServer(
@@ -26,6 +29,7 @@ func NewHTTPServer(
 ) *HttpServer {
 	correlationSvc := tracing.New()
 	prefixPath := cnf.Get(config.API_PATH)
+	log := logger.NewLogger(common.HTTPPrefix)
 
 	r := NewRouter(prefixPath)
 
@@ -35,7 +39,7 @@ func NewHTTPServer(
 		middlewares.CORS(middlewareConfigs, r.RegisteredRoutes),
 		middlewares.SecureMiddleware,
 		correlationSvc.CorrelationMiddleware,
-		middlewares.Logging(c.Logger),
+		middlewares.Logging(log),
 		middlewares.AttachParams,
 		middlewares.TimeoutMiddleware(cnf),
 	// 	middleware.Metrics(c.Metrics()),
@@ -44,6 +48,7 @@ func NewHTTPServer(
 	return &HttpServer{
 		Router: r,
 		Port:   port,
+		logger: log,
 	}
 }
 
@@ -63,7 +68,7 @@ func (s *HttpServer) Run(c *container.Container, config config.Config) {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	c.Logger.Info("HTTP Server is running on", "port", s.Port)
+	s.logger.Info("HTTP Server is running on", "port", s.Port)
 
 	if err := s.Server.ListenAndServe(); err != nil {
 		c.Logger.Debug(err)

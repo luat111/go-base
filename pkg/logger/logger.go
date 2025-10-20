@@ -8,6 +8,7 @@ import (
 )
 
 type ILogger interface {
+	SetLoggerPrefix(prefix string)
 	Log(msg any, args ...any)
 	Error(msg any, args ...any)
 	Debug(msg any, args ...any)
@@ -25,10 +26,10 @@ type Logger struct {
 	*log.Logger
 }
 
-func NewLogger() *Logger {
+func NewLogger(prefix string) *Logger {
 	return &Logger{
 		Logger: log.NewWithOptions(os.Stderr, log.Options{
-			ReportCaller:    true,
+			Prefix:          "[" + prefix + "]",
 			ReportTimestamp: true,
 			TimeFormat:      time.DateTime,
 		}),
@@ -57,4 +58,8 @@ func (l *Logger) Warn(msg any, args ...any) {
 
 func (l *Logger) Debugf(msg string, args ...any) {
 	l.Logger.Warn(msg, args...)
+}
+
+func (l *Logger) SetLoggerPrefix(prefix string) {
+	l.SetPrefix(prefix)
 }

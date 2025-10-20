@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"go-base/pkg/common"
 	"go-base/pkg/config"
 	"go-base/pkg/logger"
 
@@ -13,7 +14,8 @@ type Redis struct {
 	config RedisConfig
 }
 
-func New(config config.Config, logger logger.ILogger) *Redis {
+func New(config config.Config) *Redis {
+	logger := logger.NewLogger(common.RedisPrefix)
 	client, redisConfig := newRedisClient(config, logger)
 
 	instance := &Redis{

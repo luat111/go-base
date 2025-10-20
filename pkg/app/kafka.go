@@ -21,7 +21,7 @@ func (a *App[EnvInterface]) ListenKafka(handlers map[string]KafkaHandler) error 
 	}
 
 	if err := g.Wait(); err != nil {
-		a.container.Logger.Error("Init Kafka Consumers failed", "err", err)
+		a.logger.Error("Init Kafka Consumers failed", "err", err)
 		return err
 	}
 

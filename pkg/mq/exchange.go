@@ -10,6 +10,10 @@ type Exchange struct {
 }
 
 func newExchange(channel *Channel, logger logger.ILogger, name string) (*Exchange, error) {
+	if channel == nil {
+		return nil, errChannelIsNil
+	}
+
 	err := channel.ExchangeDeclare(name, topicExchange, true, false, false, false, nil)
 
 	if err != nil {

@@ -4,20 +4,20 @@ import "go-base/pkg"
 
 func (c *Container) NewCron() *pkg.Cronjob {
 	if c.cron == nil {
-		c.cron = pkg.NewCron(c.Logger)
+		c.cron = pkg.NewCron()
 	}
 
 	return c.cron
 }
 
 func (c *Container) StartCron() {
-	if c.cron == nil {
+	if c.cron != nil {
 		c.cron.Run()
 	}
 }
 
 func (c *Container) StopCron() {
-	if c.cron == nil {
+	if c.cron != nil {
 		c.cron.Stop()
 	}
 }

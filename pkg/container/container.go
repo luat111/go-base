@@ -3,6 +3,7 @@ package container
 import (
 	"errors"
 	"go-base/pkg"
+	"go-base/pkg/common"
 	"go-base/pkg/config"
 	"go-base/pkg/datasource/postgres"
 	"go-base/pkg/datasource/redis"
@@ -40,7 +41,7 @@ func NewContainer(cnf config.Config) *Container {
 
 	ctn := &Container{
 		appName: cnf.Get(config.APP_NAME),
-		Logger:  logger.NewLogger(),
+		Logger:  logger.NewLogger(common.ContainerPrefix),
 	}
 
 	ctn.Create(cnf)
@@ -55,15 +56,15 @@ func (c *Container) Create(conf config.Config) {
 
 	c.Logger.Info("Container is being created")
 
-	c.DB = postgres.New(conf, c.Logger)
-	c.Redis = redis.New(conf, c.Logger)
+	c.DB = postgres.New(conf)
+	c.Redis = redis.New(conf)
 	c.Locker = lock.New(c.Redis)
 
 	c.initMQ(conf)
 	c.initKafka(conf)
 	c.StartCron()
 
-	c.PubSub = NewPubsub(conf, c.Logger)
+	c.PubSub = NewPubsub(conf)
 }
 
 func (c *Container) Close() error {

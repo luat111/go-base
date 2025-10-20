@@ -12,6 +12,10 @@ type Queue struct {
 }
 
 func newQueue(channel *Channel, logger logger.ILogger, name string) (*Queue, error) {
+	if channel == nil {
+		return nil, errChannelIsNil
+	}
+	
 	queue, err := channel.QueueDeclare(name, true, false, false, false, nil)
 
 	if err != nil {

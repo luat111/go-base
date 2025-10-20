@@ -19,6 +19,10 @@ type Channel struct {
 }
 
 func newChannel(client *RabbitClient) (*Channel, error) {
+	if client == nil || client.conn == nil {
+		return nil, errClientConnIsNil
+	}
+
 	channel, err := client.conn.Channel()
 
 	if err != nil {
@@ -36,22 +40,20 @@ func newChannel(client *RabbitClient) (*Channel, error) {
 func (c *Channel) monitorChannel() *Channel {
 	notifyChannelClose := c.NotifyClose(make(chan *amqp091.Error, 1))
 	for {
-		select {
-		case xErr, ok := <-notifyChannelClose:
-			if !ok {
-				return nil
-			} else {
-				log.Printf("AMQP channel connection lost: %v. Attempting to reconnect...", xErr)
-				for retries := 1; retries <= 10; retries++ {
-					log.Printf("Reconnection attempt #%d...", retries)
+		xErr, ok := <-notifyChannelClose
+		if !ok {
+			return nil
+		} else {
+			log.Printf("AMQP channel connection lost: %v. Attempting to reconnect...", xErr)
+			for retries := 1; retries <= 10; retries++ {
+				log.Printf("Reconnection attempt #%d...", retries)
 
-					if newChannel, err := newChannel(c.client); err == nil {
-						log.Println("Reconnected successfully.")
-						return newChannel
-					}
-
-					time.Sleep(timeOutRetry)
+				if newChannel, err := newChannel(c.client); err == nil {
+					log.Println("Reconnected successfully.")
+					return newChannel
 				}
+
+				time.Sleep(timeOutRetry)
 			}
 		}
 

@@ -8,3 +8,16 @@ const (
 	DefaultHTTPPort  int           = 3000
 	ReqParams        string        = "req_params"
 )
+
+const (
+	AppPrefix = "APP"
+	ContainerPrefix = "CONTAINER"
+	PGPrefix = "POSTGRES"
+	RedisPrefix = "REDIS"
+	PubsubPrefix = "PUBSUB"
+	MQPrefix = "MQ"
+	KafkaPrefix = "KAFKA"
+	CronPrefix = "CRON"
+	RPCPrefix = "GRPC"
+	HTTPPrefix = "HTTP"
+)

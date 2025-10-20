@@ -25,9 +25,9 @@ func (a *App[EnvInterface]) Run() {
 	shutdownCtx, done := context.WithTimeout(context.WithoutCancel(signChan), common.DefaultTimeOut)
 	defer done()
 
-	a.container.Logger.Info("Shutting down server")
+	a.logger.Info("Shutting down server")
 	if shutdownErr := a.Shutdown(shutdownCtx); shutdownErr != nil {
-		a.container.Logger.Error("Server shutdown failed", "err", shutdownErr)
+		a.logger.Error("Server shutdown failed", "err", shutdownErr)
 	}
 }
 

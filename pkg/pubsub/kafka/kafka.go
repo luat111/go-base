@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"errors"
+	"go-base/pkg/common"
 	"go-base/pkg/logger"
 	"sync"
 
@@ -22,7 +23,8 @@ type KafkaClient struct {
 	config Config
 }
 
-func New(conf *Config, logger logger.ILogger) *KafkaClient {
+func New(conf *Config) *KafkaClient {
+	logger := logger.NewLogger(common.PubsubPrefix)
 	// returning unexported types as intended.
 	err := validateConfigs(conf)
 	if err != nil {

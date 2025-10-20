@@ -4,6 +4,7 @@ import (
 	"go-base/pkg/config"
 	"go-base/pkg/container"
 	"go-base/pkg/grpc"
+	"go-base/pkg/logger"
 	"go-base/pkg/restful"
 )
 
@@ -15,6 +16,7 @@ type App[EnvInterface any] struct {
 	// metricServer *metricServer
 
 	container *container.Container
+	logger    logger.ILogger
 
 	grpcRegistered bool
 	httpRegistered bool

@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"go-base/pkg/common"
 	"go-base/pkg/config"
 	"go-base/pkg/logger"
 	"strings"
@@ -19,7 +20,8 @@ type KafkaClient struct {
 	Logger logger.ILogger
 }
 
-func New(conf config.Config, log logger.ILogger) *KafkaClient {
+func New(conf config.Config) *KafkaClient {
+	log := logger.NewLogger(common.KafkaPrefix)
 	client := &KafkaClient{}
 
 	err := client.initialize(conf, log)

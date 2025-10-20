@@ -2,14 +2,13 @@ package container
 
 import (
 	"go-base/pkg/config"
-	"go-base/pkg/logger"
 	"go-base/pkg/pubsub"
 	"go-base/pkg/pubsub/kafka"
 	"strconv"
 	"strings"
 )
 
-func NewPubsub(conf config.Config, log logger.ILogger) pubsub.Client {
+func NewPubsub(conf config.Config) pubsub.Client {
 	if conf.Get(config.PUBSUB) == "" {
 		return nil
 	}
@@ -42,6 +41,6 @@ func NewPubsub(conf config.Config, log logger.ILogger) pubsub.Client {
 		SASLUser:         conf.Get("KAFKA_SASL_USERNAME"),
 		SASLPassword:     conf.Get("KAFKA_SASL_PASSWORD"),
 		// TLS:              tlsConf,
-	}, log)
+	})
 
 }

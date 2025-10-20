@@ -28,7 +28,7 @@ func (a *App[EnvInterface]) GetClient(name string) *grpc.ClientConn {
 
 // RegisterService adds a gRPC service to the GoFr application.
 func (a *App[EnvInterface]) RegisterService(desc *grpc.ServiceDesc, impl any) {
-	a.container.Logger.Info("Registering GRPC server:", "name", desc.ServiceName)
+	a.logger.Info("Registering GRPC server:", "name", desc.ServiceName)
 	a.grpcServer.Server.RegisterService(desc, impl)
 
 	err := injectContainer(impl, a.container)

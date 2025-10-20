@@ -26,7 +26,7 @@ func (a *App[EnvInterface]) Shutdown(ctx context.Context) error {
 		return err
 	}
 
-	a.container.Logger.Info("Application shutdown complete")
+	a.logger.Info("Application shutdown complete")
 
 	return err
 }

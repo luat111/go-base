@@ -1,10 +1,19 @@
 package mq
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 const (
 	PublishAction = "Publish"
 	ConsumeAction = "Consume"
+)
+
+var (
+	errClientConnIsNil = errors.New("RabbitMQ client connection is nil")
+	errChannelIsNil    = errors.New("RabbitMQ channel connection is nil")
+	errConsumerIsNil   = errors.New("RabbitMQ consumer connection is nil")
 )
 
 type LogMQMsg struct {

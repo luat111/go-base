@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"go-base/pkg/common"
 	"go-base/pkg/logger"
 	"sync"
 	"time"
@@ -15,7 +16,8 @@ type Cronjob struct {
 	mu sync.RWMutex
 }
 
-func NewCron(logger logger.ILogger) *Cronjob {
+func NewCron() *Cronjob {
+	logger := logger.NewLogger(common.CronPrefix)
 	c := &Cronjob{
 		cron:   cron.New(),
 		logger: logger,

@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"go-base/pkg/common"
 	"go-base/pkg/config"
 	"go-base/pkg/logger"
 
@@ -13,9 +14,10 @@ type DB struct {
 	config *DBConfig
 }
 
-func New(config config.Config, sysLog logger.ILogger) *DB {
-	dbLog := newDbLogger(sysLog)
-	db, dbConfig := newPostgreSQLInstance(config, sysLog, dbLog)
+func New(config config.Config) *DB {
+	logger := logger.NewLogger(common.PGPrefix)
+	dbLog := newDbLogger(logger)
+	db, dbConfig := newPostgreSQLInstance(config, logger, dbLog)
 
 	dbInstance := &DB{
 		DB:     db,

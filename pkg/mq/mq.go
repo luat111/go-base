@@ -1,6 +1,7 @@
 package mq
 
 import (
+	"go-base/pkg/common"
 	"go-base/pkg/config"
 	"go-base/pkg/logger"
 
@@ -15,7 +16,8 @@ type RabbitClient struct {
 	Logger logger.ILogger
 }
 
-func New(config config.Config, logger logger.ILogger) *RabbitClient {
+func New(config config.Config) *RabbitClient {
+	logger := logger.NewLogger(common.MQPrefix)
 	conn := newRabbitConn(config, logger)
 
 	go conn.monitorConnection(logger)
@@ -50,7 +52,7 @@ func (r *RabbitClient) Close() error {
 	})
 
 	g.Go(func() error {
-		if r.Producer == nil {
+		if r.Producer == nil || r.Producer.Channel == nil {
 			return nil
 		}
 
@@ -62,14 +64,19 @@ func (r *RabbitClient) Close() error {
 		return err
 	}
 
-	if err := r.conn.Close(); err != nil {
-		r.Logger.Error("Close rabbit connection failed", "err", err)
-		return err
+	if r.conn != nil {
+		if err := r.conn.Close(); err != nil {
+			r.Logger.Error("Close rabbit connection failed", "err", err)
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (r *RabbitClient) BindQueue(route string,handler HandlerFunc) error {
-	return r.Consumer.BindQueue(route,handler)
+func (r *RabbitClient) BindQueue(route string, handler HandlerFunc) error {
+	if r.Consumer == nil {
+		return errConsumerIsNil
+	}
+	return r.Consumer.BindQueue(route, handler)
 }

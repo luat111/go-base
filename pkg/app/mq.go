@@ -16,7 +16,7 @@ func (a *App[EnvInterface]) ListenRMQ(handlers map[string]mq.HandlerFunc) error 
 	}
 
 	if err := g.Wait(); err != nil {
-		a.container.Logger.Error("Listen RMQ failed", "err", err)
+		a.logger.Error("Listen RMQ failed", "err", err)
 		return err
 	}
 
