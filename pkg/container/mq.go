@@ -9,9 +9,11 @@ import (
 func (c *Container) initMQ(conf config.Config) {
 	mqHost := conf.Get(config.RMQ_HOST)
 	if mqHost != "" {
-		c.MQ = mq.New(conf)
-		autoAck, err := strconv.ParseBool(conf.Get(config.RMQ_ACK))
+		if mq, err := mq.New(conf); err == nil {
+			c.MQ = mq
+		}
 
+		autoAck, err := strconv.ParseBool(conf.Get(config.RMQ_ACK))
 		if err != nil {
 			autoAck = true
 		}

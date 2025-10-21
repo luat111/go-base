@@ -4,6 +4,7 @@ import (
 	"errors"
 	"go-base/pkg"
 	"go-base/pkg/common"
+	"go-base/pkg/common/utils"
 	"go-base/pkg/config"
 	"go-base/pkg/datasource/postgres"
 	"go-base/pkg/datasource/redis"
@@ -12,7 +13,6 @@ import (
 	"go-base/pkg/logger"
 	"go-base/pkg/mq"
 	"go-base/pkg/pubsub"
-	"reflect"
 )
 
 type Container struct {
@@ -57,8 +57,11 @@ func (c *Container) Create(conf config.Config) {
 	c.Logger.Info("Container is being created")
 
 	c.DB = postgres.New(conf)
-	c.Redis = redis.New(conf)
-	c.Locker = lock.New(c.Redis)
+
+	if conf.GetOrDefault(config.CACHE_HOST, "") != "" {
+		c.Redis = redis.New(conf)
+		c.Locker = lock.New(c.Redis)
+	}
 
 	c.initMQ(conf)
 	c.initKafka(conf)
@@ -70,19 +73,19 @@ func (c *Container) Create(conf config.Config) {
 func (c *Container) Close() error {
 	var err error
 
-	if !isNil(c.DB) {
+	if !utils.IsNil(c.DB) {
 		err = errors.Join(err, c.DB.Close())
 	}
 
-	if !isNil(c.Redis) {
+	if !utils.IsNil(c.Redis) {
 		err = errors.Join(err, c.Redis.Close())
 	}
 
-	if !isNil(c.MQ) {
+	if !utils.IsNil(c.MQ) {
 		err = errors.Join(err, c.MQ.Close())
 	}
 
-	if !isNil(c.PubSub) {
+	if !utils.IsNil(c.PubSub) {
 		err = errors.Join(err, c.PubSub.Close())
 	}
 
@@ -93,12 +96,4 @@ func (c *Container) Close() error {
 
 func (c *Container) GetAppName() string {
 	return c.appName
-}
-
-func isNil(i any) bool {
-	// Get the value of the interface
-	val := reflect.ValueOf(i)
-
-	// If the interface is not assigned or is nil, return true
-	return !val.IsValid() || val.IsNil()
 }

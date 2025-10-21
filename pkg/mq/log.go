@@ -12,6 +12,7 @@ const (
 
 var (
 	errClientConnIsNil = errors.New("RabbitMQ client connection is nil")
+	errClientIsNil     = errors.New("RabbitMQ client is nil")
 	errChannelIsNil    = errors.New("RabbitMQ channel connection is nil")
 	errConsumerIsNil   = errors.New("RabbitMQ consumer connection is nil")
 )

@@ -15,4 +15,9 @@ const (
 	KAFKA_ACK          string = "KAFKA_ACK"
 	KAFKA_READER_TOPIC string = "KAFKA_READER_TOPIC"
 	KAFKA_WRITER_TOPIC string = "KAFKA_WRITER_TOPIC"
+
+	CACHE_HOST string = "CACHE_HOST"
+	CACHE_PORT string = "CACHE_PORT"
+	CACHE_PWD  string = "CACHE_PWD"
+	CACHE_DB   string = "CACHE_DB"
 )

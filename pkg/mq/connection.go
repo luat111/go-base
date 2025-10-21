@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	rabbitPingTimeout = 5 * time.Second
-	defaultRabbitPort = 6379
+	defaultRabbitPort               = 5672
+	timeOutRetry      time.Duration = 5 * time.Second
+	timeOutDuration   time.Duration = 5 * time.Second
 )
 
 type RabbitConnection struct {
@@ -21,7 +22,7 @@ type RabbitConnection struct {
 	config *RabbitConfig
 }
 
-func newRabbitConn(config config.Config, logger logger.ILogger) *RabbitConnection {
+func newRabbitConn(config config.Config, logger logger.ILogger) (*RabbitConnection, error) {
 	cnf := getConfig(config)
 	url := cnf.getConnectionString()
 
@@ -29,7 +30,7 @@ func newRabbitConn(config config.Config, logger logger.ILogger) *RabbitConnectio
 
 	if err != nil {
 		logger.Error("Connect to Rabbit failed", "err", err)
-		return nil
+		panic(err)
 	} else {
 		logger.Info("Connected to Rabbit")
 	}
@@ -37,7 +38,7 @@ func newRabbitConn(config config.Config, logger logger.ILogger) *RabbitConnectio
 	return &RabbitConnection{
 		Connection: conn,
 		config:     cnf,
-	}
+	}, nil
 }
 
 func (c *RabbitConnection) reconnect() error {
@@ -48,31 +49,6 @@ func (c *RabbitConnection) reconnect() error {
 	c.Connection = conn
 
 	return err
-}
-
-func (c *RabbitConnection) monitorConnection(l logger.ILogger) {
-	if c == nil {
-		l.Error("RabbitConnection is nil, cannot monitor")
-		return
-	}
-
-	notifyConnClose := c.Connection.NotifyClose(make(chan *amqp091.Error, 1))
-
-	for {
-		select {
-		case xErr, ok := <-notifyConnClose:
-			if !ok {
-				return
-			} else {
-				l.Error("amqp connection closed", "err", xErr)
-				if err := c.reconnect(); err != nil {
-					l.Error("amqp connection cannot be reconnected", "err", err)
-					return
-				}
-				notifyConnClose = c.Connection.NotifyClose(make(chan *amqp091.Error, 1))
-			}
-		}
-	}
 }
 
 type RabbitConfig struct {

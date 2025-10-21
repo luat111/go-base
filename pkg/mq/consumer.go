@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type HandlerFunc func(body []byte, metadata map[string]string)
+type HandlerFunc func(body []byte, metadata map[string]string, msg amqp091.Delivery)
 
 type Consumer struct {
 	Channel  *Channel
@@ -75,6 +75,8 @@ func (c *Consumer) BindQueue(route string, handler HandlerFunc) error {
 		return err
 	}
 
+	c.Logger.Info("Bind queue successfully", "route", route)
+
 	c.BoundRoute[route] = handler
 
 	return err
@@ -106,10 +108,6 @@ func (c *Consumer) ConsumeData(ctx context.Context, messages <-chan amqp091.Deli
 		handler := c.BoundRoute[msg.RoutingKey]
 
 		if handler != nil {
-			if !c.AutoAck {
-				msg.Ack(false)
-			}
-
 			metadata := TableToMap(msg.Headers)
 
 			var data any
@@ -125,7 +123,11 @@ func (c *Consumer) ConsumeData(ctx context.Context, messages <-chan amqp091.Deli
 
 			c.Logger.Info("Receive message", "Message", logMsg)
 
-			handler(msg.Body, metadata)
+			handler(msg.Body, metadata, msg)
+
+			if c.AutoAck {
+				msg.Ack(false)
+			}
 		}
 	}
 }

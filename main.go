@@ -10,6 +10,7 @@ import (
 	"go-base/pkg/restful"
 	"go-base/proto"
 
+	"github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
 )
 
@@ -70,7 +71,7 @@ func TestPostHandler(c *restful.Context) (any, error) {
 	return true, nil
 }
 
-func test(body []byte, metadata map[string]string) {
+func test(body []byte, metadata map[string]string, msg amqp091.Delivery) {
 	fmt.Println(body, metadata)
 }
 
