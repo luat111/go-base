@@ -3,6 +3,7 @@ module go-base
 go 1.24.1
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/bsm/redislock v0.9.4
 	github.com/charmbracelet/log v0.4.1
 	github.com/gin-contrib/cors v1.7.3

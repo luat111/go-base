@@ -4,8 +4,8 @@ import (
 	"cmp"
 	"context"
 	"go-base/pkg"
+	"go-base/pkg/common/types"
 	"go-base/pkg/container"
-	"go-base/pkg/datasource/postgres/repository"
 	"slices"
 	"time"
 )
@@ -23,11 +23,13 @@ type WorkflowExecutor struct {
 	repo      *WorkflowRepository
 
 	// Executor to run the workflow
-	executor    *executor
+	Executor    *executor
 	ExecuteFunc ExecuteFunc
+	Payload     types.JSONB
 
 	// Workflow properties
-	props WorkflowProps
+	props       WorkflowProps
+	retryConfig RetryConfig
 
 	stepOperators map[string]stepHandler
 	stepResults   map[string]stepHandler
@@ -36,20 +38,24 @@ type WorkflowExecutor struct {
 func NewWorkflowExecutor(
 	ctn *container.Container,
 	props WorkflowProps,
-	repo *repository.BaseRepository,
+	repo *WorkflowRepository,
 	execFn ExecuteFunc,
+	retryConfig RetryConfig,
+	payload types.JSONB,
 ) *WorkflowExecutor {
 	wfExec := &WorkflowExecutor{
 		cron:          ctn.NewCron(),
 		props:         props,
 		container:     ctn,
-		repo:          newWorkflowRepository(repo),
+		repo:          repo,
 		stepOperators: make(map[string]stepHandler),
 		stepResults:   make(map[string]stepHandler),
 		ExecuteFunc:   execFn,
+		retryConfig:   retryConfig,
+		Payload:       payload,
 	}
 
-	wfExec.executor = NewExecutor(wfExec)
+	wfExec.Executor = NewExecutor(wfExec)
 
 	return wfExec
 }
@@ -99,11 +105,13 @@ func (w *WorkflowExecutor) runWorkflow(ctx context.Context, wf *Workflow) bool {
 		return true
 	}
 
-	_, err := w.ExecuteFunc(w.executor)
+	_, err := w.ExecuteFunc(w.Executor)
 
 	if err != nil {
 		w.container.Logger.Error("Workflow execution failed:", err)
-		wf.ProcessResults = err.Error()
+		wf.ProcessResults = types.JSONB{
+			"Error": err.Error(),
+		}
 	}
 
 	duration := time.Since(startTime)
