@@ -10,8 +10,9 @@ import (
 
 type DB struct {
 	*gorm.DB
-	logger *DBLogger
-	config *DBConfig
+	logger          *DBLogger
+	containerLogger logger.ILogger
+	config          *DBConfig
 }
 
 func New(config config.Config) *DB {
@@ -20,9 +21,10 @@ func New(config config.Config) *DB {
 	db, dbConfig := newPostgreSQLInstance(config, logger, dbLog)
 
 	dbInstance := &DB{
-		DB:     db,
-		logger: dbLog,
-		config: dbConfig,
+		DB:              db,
+		logger:          dbLog,
+		containerLogger: logger,
+		config:          dbConfig,
 	}
 
 	go retryConnection(dbInstance)
@@ -38,4 +40,14 @@ func (d *DB) Close() error {
 	}
 
 	return instance.Close()
+}
+
+func (d *DB) MigrateEntities(entities []any) error {
+	err := d.DB.AutoMigrate(entities...)
+
+	if err != nil {
+		d.containerLogger.Error("Migrate failed", "err", err.Error())
+	}
+
+	return err
 }

@@ -20,4 +20,5 @@ const (
 	CronPrefix = "CRON"
 	RPCPrefix = "GRPC"
 	HTTPPrefix = "HTTP"
+	WorkflowPrefix = "WORKFLOW"
 )

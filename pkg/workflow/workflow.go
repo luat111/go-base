@@ -4,15 +4,18 @@ import (
 	"cmp"
 	"context"
 	"go-base/pkg"
+	"go-base/pkg/common"
 	"go-base/pkg/common/types"
 	"go-base/pkg/container"
+	"go-base/pkg/logger"
 	"slices"
+	"sync"
 	"time"
 )
 
 type WorkflowProps struct {
 	Name       string
-	Payload    any
+	Payload    types.JSONB
 	MaxAttempt int
 	Schedule   string
 }
@@ -23,16 +26,23 @@ type WorkflowExecutor struct {
 	repo      *WorkflowRepository
 
 	// Executor to run the workflow
-	Executor    *executor
+	Executor    *Executor
 	ExecuteFunc ExecuteFunc
-	Payload     types.JSONB
 
 	// Workflow properties
 	props       WorkflowProps
 	retryConfig RetryConfig
 
-	stepOperators map[string]stepHandler
-	stepResults   map[string]stepHandler
+	// Workflow data
+	ProcessResults types.JSONB
+	Payload        types.JSONB
+
+	stepOperators map[WorkflowStep]StepHandler
+	stepResults   map[WorkflowStep]StepHandler
+
+	logger logger.ILogger
+
+	mu sync.Mutex
 }
 
 func NewWorkflowExecutor(
@@ -41,18 +51,18 @@ func NewWorkflowExecutor(
 	repo *WorkflowRepository,
 	execFn ExecuteFunc,
 	retryConfig RetryConfig,
-	payload types.JSONB,
 ) *WorkflowExecutor {
+	logger := logger.NewLogger(common.WorkflowPrefix)
 	wfExec := &WorkflowExecutor{
 		cron:          ctn.NewCron(),
 		props:         props,
 		container:     ctn,
 		repo:          repo,
-		stepOperators: make(map[string]stepHandler),
-		stepResults:   make(map[string]stepHandler),
+		stepOperators: make(map[WorkflowStep]StepHandler),
+		stepResults:   make(map[WorkflowStep]StepHandler),
 		ExecuteFunc:   execFn,
 		retryConfig:   retryConfig,
-		Payload:       payload,
+		logger:        logger,
 	}
 
 	wfExec.Executor = NewExecutor(wfExec)
@@ -81,6 +91,20 @@ func (w *WorkflowExecutor) isFinished(workflow *Workflow) bool {
 	return slices.Contains([]WorkflowResult{Completed, Failed}, workflow.Status)
 }
 
+func (w *WorkflowExecutor) SetProcessResults(processResults map[string]any) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	w.ProcessResults = processResults
+}
+
+func (w *WorkflowExecutor) SetPayload(payload map[string]any) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	w.Payload = payload
+}
+
 func (w *WorkflowExecutor) runWorkflow(ctx context.Context, wf *Workflow) bool {
 	if wf == nil {
 		return false
@@ -104,6 +128,11 @@ func (w *WorkflowExecutor) runWorkflow(ctx context.Context, wf *Workflow) bool {
 	if wf.Finished {
 		return true
 	}
+
+	// Map for execute
+	w.mu.Lock()
+	w.ProcessResults, w.Payload = wf.ProcessResults, wf.Payload
+	w.mu.Unlock()
 
 	_, err := w.ExecuteFunc(w.Executor)
 

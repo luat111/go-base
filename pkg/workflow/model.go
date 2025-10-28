@@ -16,7 +16,7 @@ type Workflow struct {
 	ProcessResults types.JSONB    `gorm:"type:jsonb"`
 	Status         WorkflowResult `gorm:"default:'NEW'"`
 	Finished       bool           `gorm:"default:false"`
-	Duration       time.Duration  `gorm:"type:int64"`
+	Duration       time.Duration  `gorm:"type:int"`
 	StartedTime    time.Time      `gorm:"type:timestamptz"`
 	FinishedTime   time.Time      `gorm:"type:timestamptz"`
 }

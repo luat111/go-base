@@ -8,7 +8,6 @@ import (
 
 type WorkflowRepository struct {
 	baseRepo *repository.BaseRepository
-	Model    any
 }
 
 func NewWorkflowRepository(repo *repository.BaseRepository) *WorkflowRepository {
@@ -33,7 +32,7 @@ func (w *WorkflowExecutor) createWorkflow(ctx context.Context) error {
 	wf.ProcessResults = types.JSONB{}
 	wf.WorkflowName = w.props.Name
 	wf.MaxAttempts = w.props.MaxAttempt
-	wf.Payload = w.Payload
+	wf.Payload = w.props.Payload
 
 	return w.repo.baseRepo.Create(ctx, &wf)
 }

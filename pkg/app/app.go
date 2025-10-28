@@ -27,3 +27,8 @@ func (a *App[EnvInterface]) LoadConfig(opt config.EnvOptions) {
 
 	a.Config = config
 }
+
+// For testing only
+func (a *App[EnvInterface]) Container() *container.Container {
+	return a.container
+}

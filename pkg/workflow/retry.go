@@ -11,10 +11,12 @@ type RetryConfig struct {
 	MaxAttempt uint
 }
 
-func (w *WorkflowExecutor) Retry(ctx context.Context) error {
+func (w *WorkflowExecutor) Execute(ctx context.Context) error {
 	err := retry.Do(
 		func() error {
-			return nil
+			_, err := w.ExecuteFunc(w.Executor)
+
+			return err
 		},
 		retry.MaxDelay(time.Duration(60*time.Second)),
 		retry.DelayType(func(n uint, err error, config *retry.Config) time.Duration {
