@@ -1,5 +1,7 @@
 package workflow
 
+import "time"
+
 type WorkflowResult string
 
 const (
@@ -15,4 +17,4 @@ const (
 	Rerun   WorkflowResult = "RERUN"
 )
 
-const WF_DEFAULT_TIMEOUT = 10000
+const WF_DEFAULT_TIMEOUT = 1000 * time.Second

@@ -8,7 +8,6 @@ import (
 	"go-base/pkg/common/types"
 	"go-base/pkg/container"
 	"go-base/pkg/logger"
-	"slices"
 	"sync"
 	"time"
 )
@@ -20,9 +19,7 @@ type WorkflowProps struct {
 	Schedule   string
 }
 
-type WorkflowExecutor[T ~struct {
-	Workflow
-}] struct {
+type WorkflowExecutor[T ~struct{ Workflow }] struct {
 	container *container.Container
 	cron      *pkg.Cronjob
 	repo      IWorkflowRepository[T]
@@ -87,13 +84,61 @@ func (w *WorkflowExecutor[T]) crawlWorkflow() {
 	}
 
 	for _, wf := range wfs {
-		go w.runWorkflow(ctx, &wf)
+		go w.runWorkflow(ctx, wf)
 	}
 }
 
-func (w *WorkflowExecutor[T]) isFinished(workflow *T) bool {
+func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, wf struct{ Workflow }) bool {
+	if wf.ID == "" {
+		return false
+	}
 
-	return slices.Contains([]WorkflowResult{Completed, Failed}, workflow.Status)
+	lock, errObtainLock := w.container.Locker.Obtain(ctx, wf.ID, WF_DEFAULT_TIMEOUT, nil)
+	defer lock.Release(ctx)
+
+	if errObtainLock != nil {
+		w.logger.Error(errObtainLock)
+		return false
+	}
+
+	var currentAttempt int
+	startTime := time.Now()
+	if wf.CurrentAttempt == wf.MaxAttempts {
+		currentAttempt = wf.CurrentAttempt
+	} else {
+		currentAttempt = wf.CurrentAttempt + 1
+	}
+
+	if wf.isFinished() {
+		return true
+	}
+
+	// Map for execute
+	w.mu.Lock()
+	w.ProcessResults, w.Payload = wf.ProcessResults, wf.Payload
+	w.mu.Unlock()
+
+	result, err := w.ExecuteFunc(ctx, w.Executor, w.repo)
+
+	if err != nil || result != Completed {
+		w.logger.Error("Workflow execution failed", "err", err)
+
+		wf.ProcessResults = types.JSONB{
+			"Error": err.Error(),
+		}
+	}
+
+	duration := time.Since(startTime)
+
+	wf.StartedTime = startTime
+	wf.FinishedTime = startTime.Add(duration)
+	wf.CurrentAttempt = currentAttempt
+	wf.Finished = cmp.Or(wf.CurrentAttempt >= w.props.MaxAttempt, wf.isFinished())
+	wf.Status = result
+
+	w.repo.Update(ctx, wf.ID, &wf)
+
+	return true
 }
 
 func (w *WorkflowExecutor[T]) SetProcessResults(processResults map[string]any) {
@@ -108,70 +153,4 @@ func (w *WorkflowExecutor[T]) SetPayload(payload map[string]any) {
 	defer w.mu.Unlock()
 
 	w.Payload = payload
-}
-
-func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, wf *T) bool {
-	if wf == nil {
-		return false
-	}
-
-	lock, errObtainLock := w.container.Locker.Obtain(ctx, wf.ID, WF_DEFAULT_TIMEOUT, nil)
-	defer lock.Release(ctx)
-
-	if errObtainLock != nil {
-		return false
-	}
-
-	var currentAttempt int
-	startTime := time.Now()
-	if wf.CurrentAttempt == wf.MaxAttempts {
-		currentAttempt = wf.CurrentAttempt
-	} else {
-		currentAttempt = wf.CurrentAttempt + 1
-	}
-
-	if wf.Finished {
-		return true
-	}
-
-	// Map for execute
-	w.mu.Lock()
-	w.ProcessResults, w.Payload = wf.ProcessResults, wf.Payload
-	w.mu.Unlock()
-
-	result, err := w.ExecuteFunc(ctx, w.Executor, w.repo)
-
-	if err != nil || result != Completed {
-		w.logger.Error("Workflow execution failed:", err)
-
-		w.mu.Lock()
-		wf.ProcessResults = types.JSONB{
-			"Error": err.Error(),
-		}
-		w.mu.Unlock()
-	}
-
-	duration := time.Since(startTime)
-
-	wf.StartedTime = startTime
-	wf.FinishedTime = startTime.Add(duration)
-	wf.CurrentAttempt = currentAttempt
-	wf.Finished = cmp.Or(wf.CurrentAttempt >= w.props.MaxAttempt, w.isFinished(wf))
-	wf.Status = result
-
-	w.repo.Update(ctx, wf)
-
-	return true
-}
-
-func (w *WorkflowExecutor[T]) toWf(workflow T) *Workflow {
-	switch wf := any(workflow).(type) {
-	case *Workflow:
-		return wf
-	case Workflow:
-		return &wf
-	default:
-		w.logger.Error("Failed to convert to Workflow")
-		return nil
-	}
 }

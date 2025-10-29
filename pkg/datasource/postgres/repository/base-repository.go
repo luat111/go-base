@@ -9,16 +9,16 @@ import (
 
 type BaseRepository struct {
 	DB     *gorm.DB
-	Entity any
+	entity any
 }
 
 func NewBaseRepository(db *gorm.DB, entity any) *BaseRepository {
-	return &BaseRepository{DB: db, Entity: entity}
+	return &BaseRepository{DB: db, entity: entity}
 }
 
 // Transaction handling
 func (r *BaseRepository) WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error {
-	return r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return r.DB.Model(r.entity).WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return fn(tx)
 	})
 }
@@ -26,22 +26,22 @@ func (r *BaseRepository) WithTransaction(ctx context.Context, fn func(tx *gorm.D
 // Create a record
 func (r *BaseRepository) Create(ctx context.Context, entity any) error {
 	fmt.Println(entity)
-	return r.DB.WithContext(ctx).Create(entity).Error
+	return r.DB.Model(r.entity).WithContext(ctx).Create(entity).Error
 }
 
 // Update a record
-func (r *BaseRepository) Update(ctx context.Context, entity any) error {
-	return r.DB.WithContext(ctx).Save(entity).Error
+func (r *BaseRepository) Update(ctx context.Context, id string, entity any) error {
+	return r.DB.Model(r.entity).WithContext(ctx).Where("id = ?", id).Updates(entity).Error
 }
 
 // Delete a record
 func (r *BaseRepository) Delete(ctx context.Context, id string) error {
-	return r.DB.WithContext(ctx).Delete(r.Entity, id).Error
+	return r.DB.Model(r.entity).WithContext(ctx).Delete(r.entity, id).Error
 }
 
 // Find records based on a query function
 func (r *BaseRepository) Find(ctx context.Context, result any, queryFunc func(db *gorm.DB) *gorm.DB) error {
-	db := r.DB.WithContext(ctx)
+	db := r.DB.Model(r.entity).WithContext(ctx)
 
 	// Apply query function
 	db = queryFunc(db)
@@ -52,13 +52,13 @@ func (r *BaseRepository) Find(ctx context.Context, result any, queryFunc func(db
 
 // Find by ID
 func (r *BaseRepository) FindByID(ctx context.Context, id any) error {
-	return r.DB.WithContext(ctx).First(r.Entity, id).Error
+	return r.DB.Model(r.entity).WithContext(ctx).First(r.entity, id).Error
 }
 
 // Pagination handling
 func (r *BaseRepository) Paginate(ctx context.Context, page, pageSize int, result any, queryFunc func(db *gorm.DB) *gorm.DB) (int64, error) {
 	var total int64
-	db := r.DB.WithContext(ctx)
+	db := r.DB.Model(r.entity).WithContext(ctx)
 
 	// Apply query function
 	db = queryFunc(db)

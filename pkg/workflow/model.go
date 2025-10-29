@@ -3,6 +3,7 @@ package workflow
 import (
 	"go-base/pkg/common/types"
 	entity "go-base/pkg/datasource/postgres/entities"
+	"slices"
 	"time"
 )
 
@@ -19,4 +20,8 @@ type Workflow struct {
 	Duration       time.Duration  `gorm:"type:int"`
 	StartedTime    time.Time      `gorm:"type:timestamptz"`
 	FinishedTime   time.Time      `gorm:"type:timestamptz"`
+}
+
+func (w *Workflow) isFinished() bool {
+	return slices.Contains([]WorkflowResult{Completed, Failed}, w.Status) || w.Finished
 }

@@ -223,7 +223,7 @@ func (wctrl *WFCtrl) setup() {
 
 func stepA(ctx context.Context, args any) (workflow.WorkflowResult, error) {
 	fmt.Println(args)
-	return workflow.Completed, errors.New("failed ")
+	return workflow.Completed, errors.New("failed")
 }
 
 func stepB(ctx context.Context, args any) (workflow.WorkflowResult, error) {

@@ -10,7 +10,7 @@ import (
 type IWorkflowRepository[T ~struct{ Workflow }] interface {
 	GetRerunWorkflows(ctx context.Context) ([]T, error)
 	CreateWorkflow(ctx context.Context, payload any) error
-	Update(ctx context.Context, payload any) error
+	Update(ctx context.Context, id string, payload any) error
 	Save(ctx context.Context, payload any) error
 }
 
@@ -36,8 +36,8 @@ func (w *WorkflowRepository[T]) CreateWorkflow(ctx context.Context, payload any)
 	return w.baseRepo.Create(ctx, payload)
 }
 
-func (w *WorkflowRepository[T]) Update(ctx context.Context, payload any) error {
-	return w.baseRepo.Create(ctx, payload)
+func (w *WorkflowRepository[T]) Update(ctx context.Context, id string, payload any) error {
+	return w.baseRepo.Update(ctx, id, payload)
 }
 
 func (w *WorkflowRepository[T]) Save(ctx context.Context, payload any) error {
@@ -52,5 +52,5 @@ func (w *WorkflowRepository[T]) Save(ctx context.Context, payload any) error {
 		return w.CreateWorkflow(ctx, payload)
 	}
 
-	return w.baseRepo.Update(ctx, payload)
+	return w.baseRepo.Update(ctx, id, payload)
 }
