@@ -1,6 +1,8 @@
 package container
 
-import "go-base/pkg"
+import (
+	"go-base/pkg"
+)
 
 func (c *Container) NewCron() *pkg.Cronjob {
 	if c.cron == nil {

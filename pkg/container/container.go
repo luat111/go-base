@@ -65,8 +65,8 @@ func (c *Container) Create(conf config.Config) {
 
 	c.initMQ(conf)
 	c.initKafka(conf)
-	c.StartCron()
 
+	c.cron = c.NewCron()
 	c.PubSub = NewPubsub(conf)
 }
 
@@ -88,8 +88,6 @@ func (c *Container) Close() error {
 	if !utils.IsNil(c.PubSub) {
 		err = errors.Join(err, c.PubSub.Close())
 	}
-
-	c.StopCron()
 
 	return err
 }

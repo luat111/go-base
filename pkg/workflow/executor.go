@@ -1,31 +1,32 @@
 package workflow
 
 import (
+	"context"
 	"slices"
 )
 
-type ExecuteFunc func(executor *Executor) (WorkflowResult, error)
+type ExecuteFunc[T ~struct{ *Workflow }] func(ctx context.Context, executor *Executor[T]) (WorkflowResult, error)
 
-type Executor struct {
-	wfExec *WorkflowExecutor
+type Executor[T ~struct{ *Workflow }] struct {
+	wfExec *WorkflowExecutor[T]
 }
 
-func NewExecutor(wfExec *WorkflowExecutor) *Executor {
-	return &Executor{
+func NewExecutor[T ~struct{ *Workflow }](wfExec *WorkflowExecutor[T]) *Executor[T] {
+	return &Executor[T]{
 		wfExec: wfExec,
 	}
 }
 
-func (e *Executor) Execute(step WorkflowStep, args any) (WorkflowResult, error) {
+func (e *Executor[T]) Execute(ctx context.Context, step WorkflowStep, args any) (WorkflowResult, error) {
 	stepHandler := e.wfExec.stepOperators[step]
 	getStepResult := e.wfExec.stepResults[step]
 
-	stepResult, err := getStepResult(args)
+	stepResult, err := getStepResult(ctx, args)
 
 	skipResults := []WorkflowResult{Failed, Skip, Succeed}
 	if slices.Contains(skipResults, stepResult) {
 		return stepResult, err
 	}
 
-	return stepHandler(args)
+	return stepHandler(ctx, args)
 }

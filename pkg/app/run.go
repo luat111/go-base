@@ -33,7 +33,7 @@ func (a *App[EnvInterface]) Run() {
 
 func (a *App[EnvInterface]) startServer() {
 	wg := sync.WaitGroup{}
-
+	a.StartCron()
 	// Start HTTP Server
 	if a.httpRegistered {
 		wg.Add(1)

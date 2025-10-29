@@ -10,6 +10,8 @@ import (
 func (a *App[EnvInterface]) Shutdown(ctx context.Context) error {
 	var err error
 
+	a.StopCron()
+
 	if a.httpServer != nil {
 		err = errors.Join(err, a.httpServer.Shutdown(ctx))
 	}

@@ -20,14 +20,14 @@ type WorkflowProps struct {
 	Schedule   string
 }
 
-type WorkflowExecutor struct {
+type WorkflowExecutor[T ~struct{ *Workflow }] struct {
 	container *container.Container
 	cron      *pkg.Cronjob
-	repo      *WorkflowRepository
+	repo      IWorkflowRepository[T]
 
 	// Executor to run the workflow
-	Executor    *Executor
-	ExecuteFunc ExecuteFunc
+	Executor    *Executor[T]
+	ExecuteFunc ExecuteFunc[T]
 
 	// Workflow properties
 	props       WorkflowProps
@@ -45,15 +45,15 @@ type WorkflowExecutor struct {
 	mu sync.Mutex
 }
 
-func NewWorkflowExecutor(
+func NewWorkflowExecutor[T ~struct{ *Workflow }](
 	ctn *container.Container,
 	props WorkflowProps,
-	repo *WorkflowRepository,
-	execFn ExecuteFunc,
+	repo IWorkflowRepository[T],
+	execFn ExecuteFunc[T],
 	retryConfig RetryConfig,
-) *WorkflowExecutor {
+) *WorkflowExecutor[T] {
 	logger := logger.NewLogger(common.WorkflowPrefix)
-	wfExec := &WorkflowExecutor{
+	wfExec := &WorkflowExecutor[T]{
 		cron:          ctn.NewCron(),
 		props:         props,
 		container:     ctn,
@@ -67,45 +67,49 @@ func NewWorkflowExecutor(
 
 	wfExec.Executor = NewExecutor(wfExec)
 
+	wfExec.Init()
+
 	return wfExec
 }
 
-func (w *WorkflowExecutor) Init() {
+func (w *WorkflowExecutor[T]) Init() {
 	w.container.AddCronJob(w.props.Schedule, w.props.Name, w.crawlWorkflow)
 }
 
-func (w *WorkflowExecutor) crawlWorkflow() {
+func (w *WorkflowExecutor[T]) crawlWorkflow() {
 	ctx := context.Background()
-	wfs, err := w.getRerunWorkflows(ctx)
+	wfs, err := w.repo.GetRerunWorkflows(ctx)
 
 	if err != nil {
-		w.container.Logger.Error("Failed to get rerun workflows:", err)
+		w.logger.Error("Failed to get rerun workflows", "err", err)
 	}
 
 	for _, wf := range wfs {
-		go w.runWorkflow(ctx, &wf)
+		go w.runWorkflow(ctx, wf)
 	}
 }
 
-func (w *WorkflowExecutor) isFinished(workflow *Workflow) bool {
-	return slices.Contains([]WorkflowResult{Completed, Failed}, workflow.Status)
+func (w *WorkflowExecutor[T]) isFinished(workflow T) bool {
+	wf := w.toWf(workflow)
+	return slices.Contains([]WorkflowResult{Completed, Failed}, wf.Status)
 }
 
-func (w *WorkflowExecutor) SetProcessResults(processResults map[string]any) {
+func (w *WorkflowExecutor[T]) SetProcessResults(processResults map[string]any) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	w.ProcessResults = processResults
 }
 
-func (w *WorkflowExecutor) SetPayload(payload map[string]any) {
+func (w *WorkflowExecutor[T]) SetPayload(payload map[string]any) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	w.Payload = payload
 }
 
-func (w *WorkflowExecutor) runWorkflow(ctx context.Context, wf *Workflow) bool {
+func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, refWf T) bool {
+	wf := w.toWf(refWf)
 	if wf == nil {
 		return false
 	}
@@ -134,7 +138,7 @@ func (w *WorkflowExecutor) runWorkflow(ctx context.Context, wf *Workflow) bool {
 	w.ProcessResults, w.Payload = wf.ProcessResults, wf.Payload
 	w.mu.Unlock()
 
-	_, err := w.ExecuteFunc(w.Executor)
+	_, err := w.ExecuteFunc(ctx, w.Executor)
 
 	if err != nil {
 		w.container.Logger.Error("Workflow execution failed:", err)
@@ -147,9 +151,18 @@ func (w *WorkflowExecutor) runWorkflow(ctx context.Context, wf *Workflow) bool {
 	wf.StartedTime = startTime
 	wf.FinishedTime = startTime.Add(duration)
 	wf.CurrentAttempt = currentAttempt
-	wf.Finished = cmp.Or(wf.CurrentAttempt >= w.props.MaxAttempt, w.isFinished(wf))
+	wf.Finished = cmp.Or(wf.CurrentAttempt >= w.props.MaxAttempt, w.isFinished(refWf))
 
-	w.repo.baseRepo.Update(ctx, wf)
+	w.repo.Update(ctx, wf)
 
 	return true
+}
+
+func (w *WorkflowExecutor[T]) toWf(workflow T) *Workflow {
+	wf, ok := any(workflow).(*Workflow)
+	if !ok {
+		w.logger.Error("Failed to convert to Workflow")
+		return nil
+	}
+	return wf
 }

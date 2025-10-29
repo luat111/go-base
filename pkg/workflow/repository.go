@@ -2,37 +2,37 @@ package workflow
 
 import (
 	"context"
-	"go-base/pkg/common/types"
 	"go-base/pkg/datasource/postgres/repository"
 )
 
-type WorkflowRepository struct {
+type IWorkflowRepository[T ~struct{ *Workflow }] interface {
+	GetRerunWorkflows(ctx context.Context) ([]T, error)
+	CreateWorkflow(ctx context.Context, payload any) error
+	Update(ctx context.Context, entity any) error
+}
+
+type WorkflowRepository[T ~struct{ *Workflow }] struct {
 	baseRepo *repository.BaseRepository
 }
 
-func NewWorkflowRepository(repo *repository.BaseRepository) *WorkflowRepository {
-	return &WorkflowRepository{baseRepo: repo}
+func NewWorkflowRepository[T ~struct{ *Workflow }](repo *repository.BaseRepository) IWorkflowRepository[T] {
+	return &WorkflowRepository[T]{baseRepo: repo}
 }
 
-func (w *WorkflowExecutor) getRerunWorkflows(ctx context.Context) ([]Workflow, error) {
-	var workflows []Workflow
+func (w *WorkflowRepository[T]) GetRerunWorkflows(ctx context.Context) ([]T, error) {
+	var workflows []T
 
 	pendingStatus := []WorkflowResult{New, Processing}
 
-	err := w.repo.baseRepo.DB.WithContext(ctx).Where("status IN ? AND finished = false", pendingStatus).Find(&workflows).Error
+	err := w.baseRepo.DB.WithContext(ctx).Where("status IN ? AND finished = false", pendingStatus).Find(&workflows).Error
 
 	return workflows, err
 }
 
-func (w *WorkflowExecutor) createWorkflow(ctx context.Context) error {
-	var wf Workflow
+func (w *WorkflowRepository[T]) CreateWorkflow(ctx context.Context, payload any) error {
+	return w.baseRepo.Create(ctx, payload)
+}
 
-	wf.Status = New
-	wf.CurrentAttempt = 1
-	wf.ProcessResults = types.JSONB{}
-	wf.WorkflowName = w.props.Name
-	wf.MaxAttempts = w.props.MaxAttempt
-	wf.Payload = w.props.Payload
-
-	return w.repo.baseRepo.Create(ctx, &wf)
+func (w *WorkflowRepository[T]) Update(ctx context.Context, payload any) error {
+	return w.baseRepo.Create(ctx, payload)
 }

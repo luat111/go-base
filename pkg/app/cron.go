@@ -7,3 +7,11 @@ func (a *App[EnvInterface]) AddCronJob(schedule, jobName string, job func()) {
 		a.logger.Error("error adding cron job", err)
 	}
 }
+
+func (a *App[EnvInterface]) StartCron() {
+	a.container.StartCron()
+}
+
+func (a *App[EnvInterface]) StopCron() {
+	a.container.StopCron()
+}

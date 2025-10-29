@@ -19,7 +19,7 @@ type Cronjob struct {
 func NewCron() *Cronjob {
 	logger := logger.NewLogger(common.CronPrefix)
 	c := &Cronjob{
-		cron:   cron.New(),
+		cron:   cron.New(cron.WithSeconds()),
 		logger: logger,
 	}
 
@@ -32,9 +32,9 @@ func (c *Cronjob) AddJob(schedule, jobName string, fn func()) error {
 
 	_, err := c.cron.AddFunc(schedule, func() {
 		start := time.Now()
-		c.logger.Info("Executing cron job:", jobName)
+		c.logger.Info("Executing cron", "job", jobName)
 		fn()
-		c.logger.Info("Job finished:", jobName, "Duration:", time.Since(start))
+		c.logger.Info("Job finished", "job", jobName, "Duration", time.Since(start))
 	})
 
 	return err
