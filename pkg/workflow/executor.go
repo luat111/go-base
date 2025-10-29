@@ -5,13 +5,13 @@ import (
 	"slices"
 )
 
-type ExecuteFunc[T ~struct{ *Workflow }] func(ctx context.Context, executor *Executor[T]) (WorkflowResult, error)
+type ExecuteFunc[T ~struct{ Workflow }] func(ctx context.Context, executor *Executor[T], repo IWorkflowRepository[T]) (WorkflowResult, error)
 
-type Executor[T ~struct{ *Workflow }] struct {
+type Executor[T ~struct{ Workflow }] struct {
 	wfExec *WorkflowExecutor[T]
 }
 
-func NewExecutor[T ~struct{ *Workflow }](wfExec *WorkflowExecutor[T]) *Executor[T] {
+func NewExecutor[T ~struct{ Workflow }](wfExec *WorkflowExecutor[T]) *Executor[T] {
 	return &Executor[T]{
 		wfExec: wfExec,
 	}

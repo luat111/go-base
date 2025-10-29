@@ -2,17 +2,18 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 )
 
 type BaseRepository struct {
 	DB     *gorm.DB
-	entity any
+	Entity any
 }
 
 func NewBaseRepository(db *gorm.DB, entity any) *BaseRepository {
-	return &BaseRepository{DB: db, entity: entity}
+	return &BaseRepository{DB: db, Entity: entity}
 }
 
 // Transaction handling
@@ -24,17 +25,18 @@ func (r *BaseRepository) WithTransaction(ctx context.Context, fn func(tx *gorm.D
 
 // Create a record
 func (r *BaseRepository) Create(ctx context.Context, entity any) error {
-	return r.DB.WithContext(ctx).Create(r.entity).Error
+	fmt.Println(entity)
+	return r.DB.WithContext(ctx).Create(entity).Error
 }
 
 // Update a record
 func (r *BaseRepository) Update(ctx context.Context, entity any) error {
-	return r.DB.WithContext(ctx).Save(r.entity).Error
+	return r.DB.WithContext(ctx).Save(entity).Error
 }
 
 // Delete a record
 func (r *BaseRepository) Delete(ctx context.Context, id string) error {
-	return r.DB.WithContext(ctx).Delete(r.entity, id).Error
+	return r.DB.WithContext(ctx).Delete(r.Entity, id).Error
 }
 
 // Find records based on a query function
@@ -50,7 +52,7 @@ func (r *BaseRepository) Find(ctx context.Context, result any, queryFunc func(db
 
 // Find by ID
 func (r *BaseRepository) FindByID(ctx context.Context, id any) error {
-	return r.DB.WithContext(ctx).First(r.entity, id).Error
+	return r.DB.WithContext(ctx).First(r.Entity, id).Error
 }
 
 // Pagination handling

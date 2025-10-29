@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go-base/pkg/app"
 	"go-base/pkg/common/types"
@@ -145,15 +146,11 @@ func HelloHandler(client *HelloService) func(c *restful.Context) (any, error) {
 // Workflow
 
 type TestWorkflow struct {
-	*workflow.Workflow
+	workflow.Workflow
 }
 
 type WFCtrl struct {
 	*workflow.WorkflowExecutor[TestWorkflow]
-}
-
-type TestWorkflowRepo struct {
-
 }
 
 const (
@@ -164,9 +161,9 @@ const (
 
 func NewWfController(app *app.App[AppConfig]) *WFCtrl {
 	baseRepo := repository.NewBaseRepository(app.DB().DB, new(TestWorkflow))
-	wfRepo:= workflow.NewWorkflowRepository[TestWorkflow](baseRepo)
+	wfRepo := workflow.NewWorkflowRepository[TestWorkflow](baseRepo)
 
-	wfExec := workflow.NewWorkflowExecutor[TestWorkflow](
+	wfExec := workflow.NewWorkflowExecutor(
 		app.Container(),
 		workflow.WorkflowProps{
 			Name: "test",
@@ -226,7 +223,7 @@ func (wctrl *WFCtrl) setup() {
 
 func stepA(ctx context.Context, args any) (workflow.WorkflowResult, error) {
 	fmt.Println(args)
-	return workflow.Completed, nil
+	return workflow.Completed, errors.New("failed ")
 }
 
 func stepB(ctx context.Context, args any) (workflow.WorkflowResult, error) {
@@ -241,7 +238,11 @@ func stepC(ctx context.Context, args any) (workflow.WorkflowResult, error) {
 
 // Execute
 
-func wfExec(ctx context.Context, executor *workflow.Executor[TestWorkflow]) (workflow.WorkflowResult, error) {
+func wfExec(
+	ctx context.Context,
+	executor *workflow.Executor[TestWorkflow],
+	repo workflow.IWorkflowRepository[TestWorkflow],
+) (workflow.WorkflowResult, error) {
 	resA, err := executor.Execute(ctx, StepA, "step A")
 	if err != nil || resA != workflow.Succeed {
 		return workflow.Failed, err
@@ -256,6 +257,10 @@ func wfExec(ctx context.Context, executor *workflow.Executor[TestWorkflow]) (wor
 	if err != nil || resC != workflow.Succeed {
 		return workflow.Failed, err
 	}
+
+	repo.Save(ctx, &TestWorkflow{
+		Workflow: workflow.Workflow{Status: workflow.Completed},
+	})
 
 	return workflow.Failed, nil
 }

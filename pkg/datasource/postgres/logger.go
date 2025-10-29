@@ -70,7 +70,7 @@ func (l *DBLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql st
 		logMsg.Query = sql
 		logMsg.Duration = duration
 
-		l.baseLogger.Error(err, "rows", rows, logMsg)
+		l.baseLogger.Error(err, "rows", rows, "msg", logMsg)
 
 	case elapsed > SlowThreshold:
 		sql, rows := fc()
@@ -80,7 +80,7 @@ func (l *DBLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql st
 		logMsg.Query = sql
 		logMsg.Duration = duration
 
-		l.baseLogger.Warn(slowLog, "rows", rows, logMsg)
+		l.baseLogger.Warn(slowLog, "rows", rows, "msg", logMsg)
 
 	default:
 		sql, rows := fc()
@@ -89,6 +89,6 @@ func (l *DBLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql st
 		logMsg.Query = sql
 		logMsg.Duration = duration
 
-		l.baseLogger.Info("DBLOG", "rows", rows, "Message", logMsg)
+		l.baseLogger.Info("DBLOG", "rows", rows, "msg", logMsg)
 	}
 }

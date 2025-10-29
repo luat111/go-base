@@ -20,7 +20,9 @@ type WorkflowProps struct {
 	Schedule   string
 }
 
-type WorkflowExecutor[T ~struct{ *Workflow }] struct {
+type WorkflowExecutor[T ~struct {
+	Workflow
+}] struct {
 	container *container.Container
 	cron      *pkg.Cronjob
 	repo      IWorkflowRepository[T]
@@ -45,7 +47,7 @@ type WorkflowExecutor[T ~struct{ *Workflow }] struct {
 	mu sync.Mutex
 }
 
-func NewWorkflowExecutor[T ~struct{ *Workflow }](
+func NewWorkflowExecutor[T ~struct{ Workflow }](
 	ctn *container.Container,
 	props WorkflowProps,
 	repo IWorkflowRepository[T],
@@ -85,13 +87,13 @@ func (w *WorkflowExecutor[T]) crawlWorkflow() {
 	}
 
 	for _, wf := range wfs {
-		go w.runWorkflow(ctx, wf)
+		go w.runWorkflow(ctx, &wf)
 	}
 }
 
-func (w *WorkflowExecutor[T]) isFinished(workflow T) bool {
-	wf := w.toWf(workflow)
-	return slices.Contains([]WorkflowResult{Completed, Failed}, wf.Status)
+func (w *WorkflowExecutor[T]) isFinished(workflow *T) bool {
+
+	return slices.Contains([]WorkflowResult{Completed, Failed}, workflow.Status)
 }
 
 func (w *WorkflowExecutor[T]) SetProcessResults(processResults map[string]any) {
@@ -108,8 +110,7 @@ func (w *WorkflowExecutor[T]) SetPayload(payload map[string]any) {
 	w.Payload = payload
 }
 
-func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, refWf T) bool {
-	wf := w.toWf(refWf)
+func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, wf *T) bool {
 	if wf == nil {
 		return false
 	}
@@ -138,20 +139,25 @@ func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, refWf T) bool {
 	w.ProcessResults, w.Payload = wf.ProcessResults, wf.Payload
 	w.mu.Unlock()
 
-	_, err := w.ExecuteFunc(ctx, w.Executor)
+	result, err := w.ExecuteFunc(ctx, w.Executor, w.repo)
 
-	if err != nil {
-		w.container.Logger.Error("Workflow execution failed:", err)
+	if err != nil || result != Completed {
+		w.logger.Error("Workflow execution failed:", err)
+
+		w.mu.Lock()
 		wf.ProcessResults = types.JSONB{
 			"Error": err.Error(),
 		}
+		w.mu.Unlock()
 	}
 
 	duration := time.Since(startTime)
+
 	wf.StartedTime = startTime
 	wf.FinishedTime = startTime.Add(duration)
 	wf.CurrentAttempt = currentAttempt
-	wf.Finished = cmp.Or(wf.CurrentAttempt >= w.props.MaxAttempt, w.isFinished(refWf))
+	wf.Finished = cmp.Or(wf.CurrentAttempt >= w.props.MaxAttempt, w.isFinished(wf))
+	wf.Status = result
 
 	w.repo.Update(ctx, wf)
 
@@ -159,10 +165,13 @@ func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, refWf T) bool {
 }
 
 func (w *WorkflowExecutor[T]) toWf(workflow T) *Workflow {
-	wf, ok := any(workflow).(*Workflow)
-	if !ok {
+	switch wf := any(workflow).(type) {
+	case *Workflow:
+		return wf
+	case Workflow:
+		return &wf
+	default:
 		w.logger.Error("Failed to convert to Workflow")
 		return nil
 	}
-	return wf
 }
