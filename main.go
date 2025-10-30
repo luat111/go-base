@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"go-base/pkg/app"
 	"go-base/pkg/common/types"
@@ -220,12 +219,12 @@ func (ctrl *WFCtrl) stepA(ctx context.Context, args any) (workflow.WorkflowResul
 
 func (ctrl *WFCtrl) stepB(ctx context.Context, args any) (workflow.WorkflowResult, error) {
 	fmt.Println(args)
-	return workflow.Completed, errors.New("failed at B")
+	return workflow.Succeed, nil
 }
 
 func (ctrl *WFCtrl) stepC(ctx context.Context, args any) (workflow.WorkflowResult, error) {
 	fmt.Println(args)
-	return workflow.Completed, nil
+	return workflow.Succeed, nil
 }
 
 // Execute

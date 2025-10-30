@@ -19,11 +19,14 @@ func (w *WorkflowExecutor[T]) SetStepResults(stepResults map[WorkflowStep]StepHa
 func (w *WorkflowExecutor[T]) GetStepResult(step WorkflowStep) WorkflowResult {
 	result := w.ProcessResults[string(step)]
 
-	if res, ok := result.(WorkflowResult); ok {
-		return res
+	cvrt, ok := result.(string)
+	if !ok {
+		return Failed
 	}
 
-	return Failed
+	result = WorkflowResult(cvrt)
+
+	return result.(WorkflowResult)
 }
 
 func (w *WorkflowExecutor[T]) SetStepResult(step WorkflowStep, result any) {
