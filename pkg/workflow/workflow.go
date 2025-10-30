@@ -93,6 +93,11 @@ func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, wf struct{ Workfl
 		return false
 	}
 
+	if w.container.Locker == nil {
+		w.logger.Error("Locker is nil")
+		return false
+	}
+
 	lock, errObtainLock := w.container.Locker.Obtain(ctx, wf.ID, WF_DEFAULT_TIMEOUT, nil)
 	defer lock.Release(ctx)
 
@@ -121,20 +126,17 @@ func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, wf struct{ Workfl
 	result, err := w.ExecuteFunc(ctx, w.Executor, w.repo)
 
 	if err != nil || result != Completed {
-		w.logger.Error("Workflow execution failed", "err", err)
-
-		wf.ProcessResults = types.JSONB{
-			"Error": err.Error(),
-		}
+		w.logger.Error("Workflow execution failed", "id", wf.ID, "err", err)
 	}
 
 	duration := time.Since(startTime)
 
+	wf.Status = result
 	wf.StartedTime = startTime
 	wf.FinishedTime = startTime.Add(duration)
 	wf.CurrentAttempt = currentAttempt
+	wf.ProcessResults = w.ProcessResults
 	wf.Finished = cmp.Or(wf.CurrentAttempt >= w.props.MaxAttempt, wf.isFinished())
-	wf.Status = result
 
 	w.repo.Update(ctx, wf.ID, &wf)
 
@@ -154,3 +156,4 @@ func (w *WorkflowExecutor[T]) SetPayload(payload map[string]any) {
 
 	w.Payload = payload
 }
+

@@ -186,52 +186,44 @@ func NewWfController(app *app.App[AppConfig]) *WFCtrl {
 
 func (wctrl *WFCtrl) setup() {
 	wctrl.WorkflowExecutor.SetProcessResults(types.JSONB{
-		string(StepA): false,
-		string(StepB): false,
-		string(StepC): false,
+		string(StepA): workflow.New,
+		string(StepB): workflow.New,
+		string(StepC): workflow.New,
 	})
 
 	wctrl.WorkflowExecutor.SetStepOperators(map[workflow.WorkflowStep]workflow.StepHandler{
-		StepA: stepA,
-		StepB: stepB,
-		StepC: stepC,
+		StepA: wctrl.stepA,
+		StepB: wctrl.stepB,
+		StepC: wctrl.stepC,
 	})
-
-	var stepResult = func(step workflow.WorkflowStep) (workflow.WorkflowResult, error) {
-		if result := wctrl.WorkflowExecutor.ProcessResults[string(step)]; result.(bool) {
-			return workflow.Succeed, nil
-		}
-
-		return workflow.Rerun, nil
-	}
 
 	wctrl.WorkflowExecutor.SetStepResults(map[workflow.WorkflowStep]workflow.StepHandler{
 		StepA: func(ctx context.Context, args any) (workflow.WorkflowResult, error) {
-			return stepResult(StepA)
+			return wctrl.GetStepResult(StepA), nil
 
 		},
 		StepB: func(ctx context.Context, args any) (workflow.WorkflowResult, error) {
-			return stepResult(StepB)
+			return wctrl.GetStepResult(StepB), nil
 
 		},
 		StepC: func(ctx context.Context, args any) (workflow.WorkflowResult, error) {
-			return stepResult(StepC)
+			return wctrl.GetStepResult(StepC), nil
 
 		},
 	})
 }
 
-func stepA(ctx context.Context, args any) (workflow.WorkflowResult, error) {
+func (ctrl *WFCtrl) stepA(ctx context.Context, args any) (workflow.WorkflowResult, error) {
 	fmt.Println(args)
-	return workflow.Completed, errors.New("failed")
+	return workflow.Succeed, nil
 }
 
-func stepB(ctx context.Context, args any) (workflow.WorkflowResult, error) {
+func (ctrl *WFCtrl) stepB(ctx context.Context, args any) (workflow.WorkflowResult, error) {
 	fmt.Println(args)
-	return workflow.Completed, nil
+	return workflow.Completed, errors.New("failed at B")
 }
 
-func stepC(ctx context.Context, args any) (workflow.WorkflowResult, error) {
+func (ctrl *WFCtrl) stepC(ctx context.Context, args any) (workflow.WorkflowResult, error) {
 	fmt.Println(args)
 	return workflow.Completed, nil
 }
@@ -243,24 +235,24 @@ func wfExec(
 	executor *workflow.Executor[TestWorkflow],
 	repo workflow.IWorkflowRepository[TestWorkflow],
 ) (workflow.WorkflowResult, error) {
-	resA, err := executor.Execute(ctx, StepA, "step A")
+	resA, err := executor.Execute(ctx, StepA, "execute step A")
 	if err != nil || resA != workflow.Succeed {
 		return workflow.Failed, err
 	}
 
-	resB, err := executor.Execute(ctx, StepB, "step B")
+	resB, err := executor.Execute(ctx, StepB, "execute step B")
 	if err != nil || resB != workflow.Succeed {
-		return workflow.Failed, err
+		return workflow.Rerun, err
 	}
 
-	resC, err := executor.Execute(ctx, StepC, "step C")
+	resC, err := executor.Execute(ctx, StepC, "execute step C")
 	if err != nil || resC != workflow.Succeed {
-		return workflow.Failed, err
+		return workflow.Rerun, err
 	}
 
 	repo.Save(ctx, &TestWorkflow{
 		Workflow: workflow.Workflow{Status: workflow.Completed},
 	})
 
-	return workflow.Failed, nil
+	return workflow.Completed, nil
 }

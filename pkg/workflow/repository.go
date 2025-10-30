@@ -25,7 +25,7 @@ func NewWorkflowRepository[T ~struct{ Workflow }](repo *repository.BaseRepositor
 func (w *WorkflowRepository[T]) GetRerunWorkflows(ctx context.Context) ([]T, error) {
 	var workflows []T
 
-	pendingStatus := []WorkflowResult{New, Processing}
+	pendingStatus := []WorkflowResult{New, Processing, Rerun}
 
 	err := w.baseRepo.DB.WithContext(ctx).Where("status IN ? AND finished = false", pendingStatus).Find(&workflows).Error
 

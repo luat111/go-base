@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"cmp"
 	"context"
 	"slices"
 )
@@ -23,10 +24,20 @@ func (e *Executor[T]) Execute(ctx context.Context, step WorkflowStep, args any) 
 
 	stepResult, err := getStepResult(ctx, args)
 
-	skipResults := []WorkflowResult{Failed, Skip, Succeed}
+	skipResults := []WorkflowResult{Skip, Succeed}
 	if slices.Contains(skipResults, stepResult) {
 		return stepResult, err
 	}
 
-	return stepHandler(ctx, args)
+	result, err := stepHandler(ctx, args)
+
+	var msgErr string
+	if err != nil || result == Failed {
+		msgErr = cmp.Or(err.Error(), string(result))
+		e.wfExec.SetStepResult(step, msgErr)
+	} else {
+		e.wfExec.SetStepResult(step, result)
+	}
+
+	return result, err
 }
