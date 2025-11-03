@@ -9,17 +9,18 @@ import (
 	"go-base/pkg/common"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 )
 
 const (
-// defaultMaxMemory = 32 << 20 // 32 MB
+	defaultMaxMemory = 32 << 20 // 32 MB
 )
 
 var (
-	// errNoFileFound    = errors.New("no files were bounded")
-	// errNonPointerBind = errors.New("bind error, cannot bind to a non pointer type")
-	errNonSliceBind = errors.New("bind error: input is not a pointer to a byte slice")
+	errNoFileFound    = errors.New("no files were bounded")
+	errNonPointerBind = errors.New("bind error, cannot bind to a non pointer type")
+	errNonSliceBind   = errors.New("bind error: input is not a pointer to a byte slice")
 )
 
 type IRequest interface {
@@ -71,8 +72,8 @@ func (r *Request) Bind(i any) error {
 		}
 
 		return json.Unmarshal(body, &i)
-	// case "multipart/form-data":
-	// 	return r.bindMultipart(i)
+	case "multipart/form-data":
+		return r.bindForm(i, true)
 	// case "application/x-www-form-urlencoded":
 	// 	return r.bindFormURLEncoded(i)
 	case "binary/octet-stream":
@@ -129,6 +130,46 @@ func (r *Request) bindBinary(raw any) error {
 
 	// Assign the body to the provided slice
 	*byteSlicePtr = body
+
+	return nil
+}
+
+func (r *Request) bindForm(ptr any, isMultipart bool) error {
+	ptrVal := reflect.ValueOf(ptr)
+	if ptrVal.Kind() != reflect.Ptr {
+		return errNonPointerBind
+	}
+
+	ptrVal = ptrVal.Elem()
+
+	var fd formData
+
+	if isMultipart {
+		if err := r.req.ParseMultipartForm(defaultMaxMemory); err != nil {
+			return err
+		}
+
+		fd = formData{files: r.req.MultipartForm.File, fields: r.req.MultipartForm.Value}
+	} else {
+		if err := r.req.ParseForm(); err != nil {
+			return err
+		}
+
+		fd = formData{fields: r.req.Form}
+	}
+
+	ok, err := fd.mapStruct(ptrVal, nil)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		if isMultipart {
+			return errNoFileFound
+		}
+
+		return errFieldsNotSet
+	}
 
 	return nil
 }

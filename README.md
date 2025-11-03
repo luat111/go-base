@@ -12,8 +12,8 @@
 -   [x] Base Repository
 -   [ ] Encrypt Payload
 -   [ ] Audit
--   [ ] Outbox message
--   [ ] Circuit Breaker
+-   [x] Outbox message
+-   [x] Circuit Breaker
 -   [x] Cron
 -   [x] GRpc
 -   [ ] CI/CD
