@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+## Infrastructure packages
+- `pkg/datasource`, `pkg/mq`, `pkg/kafka`, `pkg/pubsub`, `pkg/grpc`, `pkg/logger` should each expose **narrow constructors + interfaces** and hide third-party types behind them.
+- Prefer **dependency injection via `Container`** over global singletons for connections and clients.
+- When adding a new infra integration, mirror the existing structure (connection, config, logger, interface) to keep the package consistent.

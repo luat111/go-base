@@ -1,0 +1,44 @@
+# Cursor Rules for go-base
+
+## General
+- Assume Go 1.21+ with modules enabled.
+- Prefer absolute paths in tool calls and documentation.
+- Keep files ASCII unless the file already relies on Unicode.
+
+## Formatting & lint
+- Run `gofmt -w` (or `goimports -w`) on every modified `.go` file before committing.
+- Avoid manual changes to generated files under `proto/` unless re-running `protoc`.
+
+## Testing
+- Default verification command: `go test ./...`.
+- When proto definitions change, regenerate stubs via the Makefile targets (`make gen-test`, `make gen-common`, etc.) before running tests.
+
+## Tooling
+- Use the provided `Makefile` for running the sample services (`make user-gateway`, `make user-service`) instead of ad-hoc `go run`.
+- When adding dependencies, use `go get` followed by `go mod tidy`.
+ 
+## `pkg` design (core reusable package)
+- Treat `pkg` as a **generic, reusable core library**: avoid importing application-specific code (`cmd/*`, service-specific business logic) into `pkg`.
+- Keep **public APIs stable and minimal**: prefer small, composable interfaces (e.g. `logger.ILogger`, `pubsub.Interface`) and avoid leaking concrete types when not necessary.
+- Use **generics** for app bootstrap only where it clearly improves ergonomics (e.g. `App[EnvInterface any]`), not for domain models.
+
+## App initialization (`pkg/app`)
+- Use `app.New[EnvInterface any](config.EnvOptions)` as the **primary entrypoint** to bootstrap services.
+- All new applications should load configuration via `pkg/config` and use `pkg/container.Container` for shared dependencies (databases, caches, messaging, loggers).
+- When extending initialization (adding new infra like metrics or tracing), prefer new methods on `App` or `Container` instead of ad-hoc globals.
+- Ensure `App` setup remains **fast and side-effect free** until `Run`/`Serve`-style methods are called (no network connections in constructors).
+
+## REST layer (`pkg/restful`)
+- Add HTTP handlers using the `Router` abstraction; avoid accessing `net/http` directly from outside `pkg/restful` unless absolutely necessary.
+- Register middleware through `Router.Use` and keep cross-cutting concerns (logging, CORS, timeouts, correlation IDs) in `pkg/restful/middlewares`.
+- Keep all HTTP-specific types (`HttpServer`, `Context`, request/response helpers) inside `pkg/restful` to keep calling code framework-agnostic.
+
+## Auth (`pkg/auth`)
+- Use `BaseAuth` and the `AuthService`, `ISessionRepo`, `IUserRepo` interfaces to build authentication without coupling to storage details.
+- Put data models and error definitions in `models.go` / `errors.go` and keep them free of transport concerns (no HTTP/GRPC types).
+- When adding new auth mechanisms (e.g. JWT, session-based, social login), implement them behind `AuthService`-like interfaces instead of wiring them directly into `App`.
+
+## Infrastructure packages
+- `pkg/datasource`, `pkg/mq`, `pkg/kafka`, `pkg/pubsub`, `pkg/grpc`, `pkg/logger` should each expose **narrow constructors + interfaces** and hide third-party types behind them.
+- Prefer **dependency injection via `Container`** over global singletons for connections and clients.
+- When adding a new infra integration, mirror the existing structure (connection, config, logger, interface) to keep the package consistent.

@@ -52,3 +52,7 @@ func (a *App[EnvInterface]) add(group *gin.RouterGroup, method, pattern string, 
 
 	a.httpServer.Router.Add(r)
 }
+
+func (a *App[EnvInterface]) Use(middleware ...gin.HandlerFunc) {
+	a.httpServer.Router.Use(middleware...)
+}
