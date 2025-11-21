@@ -7,6 +7,7 @@ import (
 	"go-base/pkg/common/types"
 	"go-base/pkg/config"
 	"go-base/pkg/datasource/postgres/repository"
+	"go-base/pkg/encrypt"
 	rpc "go-base/pkg/grpc"
 	"go-base/pkg/mq"
 	"go-base/pkg/restful"
@@ -38,6 +39,9 @@ type AppConfig struct {
 
 	//Redis
 	CacheOptions RedisOptions `mapstructure:"CACHE"`
+
+	//Crypto
+	CryptoConfig encrypt.CryptoConfig `mapstructure:"CRYPTO"`
 }
 
 // HTTP
@@ -77,7 +81,14 @@ func main() {
 	app.ConnectClients(map[string]string{"test": ":3003"})
 	helloService := NewHelloService(app.GetClient("test"))
 
-	group := app.Group("v1")
+	encryptSvc,_ := encrypt.NewService(encrypt.CryptoConfig{
+		PublicKeyPEM:  app.Config.Get("PUBLIC_KEY_PEM"),
+		PrivateKeyPEM: app.Config.Get("PRIVATE_KEY_PEM"),
+	})
+
+	group := app.Group("v1",encryptSvc.PayloadMiddleware(encrypt.MiddlewareConfig{
+		
+	}))
 
 	app.GET(group, "/test", HelloHandler(helloService))
 	app.POST(group, "/test/:name/:test", new(UpdatePasswordData), TestPostHandler)

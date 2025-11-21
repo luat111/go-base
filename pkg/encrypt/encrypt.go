@@ -1,4 +1,4 @@
-package crypto
+package encrypt
 
 import (
 	"crypto/aes"
@@ -13,9 +13,9 @@ import (
 )
 
 // Config holds PEM encoded RSA key material used by the Service.
-type Config struct {
-	PublicKeyPEM  string
-	PrivateKeyPEM string
+type CryptoConfig struct {
+	PublicKeyPEM  string `mapstructure:"PUBLIC_KEY_PEM"`
+	PrivateKeyPEM string `mapstructure:"PRIVATE_KEY_PEM"`
 }
 
 // Service provides AES and RSA helpers used by the payload middleware.
@@ -25,7 +25,7 @@ type Service struct {
 }
 
 // NewService builds a Service from PEM encoded key material.
-func NewService(cfg Config) (*Service, error) {
+func NewService(cfg CryptoConfig) (*Service, error) {
 	if cfg.PublicKeyPEM == "" && cfg.PrivateKeyPEM == "" {
 		return nil, errors.New("crypto: at least one RSA key is required")
 	}
