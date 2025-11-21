@@ -2,6 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"time"
 )
 
 type Authenticator interface {
@@ -13,7 +16,6 @@ type Authenticator interface {
 type CredentialsValidator[U User, C any] interface {
 	Validate(ctx context.Context, user U, cred C) error
 }
-
 
 type BaseJWTAuth[U User, C any] struct {
 	store         SessionStore
@@ -68,7 +70,7 @@ func (a *BaseJWTAuth[U, C]) handleSession(ctx context.Context, u U, rc RequestCo
 	}
 
 	// build your own JWTPayload implementation here
-	payload := /* your concrete JWTPayload for the user */
+	payload := JWTPayload{} /* your concrete JWTPayload for the user */
 
 	access, err := a.signer.Sign(payload, secret, a.defaultExpire)
 	if err != nil {
