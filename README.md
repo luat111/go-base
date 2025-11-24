@@ -1,7 +1,7 @@
 # TODO
 
--   [ ] Auth System
--   [ ] Auth Social ( missing env )
+-   [x] Auth System
+-   [x] Auth Social ( missing env )
 -   [x] Cache ( Lock, Data Layer Service )
 -   [x] Amqp
 -   [x] Kafka

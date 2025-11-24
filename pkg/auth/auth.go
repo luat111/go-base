@@ -70,7 +70,7 @@ func (a *BaseJWTAuth[U, C]) handleSession(ctx context.Context, u U, rc RequestCo
 	}
 
 	// build your own JWTPayload implementation here
-	payload := JWTPayload{} /* your concrete JWTPayload for the user */
+	payload := newJwtPayload(rc.UserID, rc.DeviceID, rc.SessionType, rc.Allowed) /* your concrete JWTPayload for the user */
 
 	access, err := a.signer.Sign(payload, secret, a.defaultExpire)
 	if err != nil {

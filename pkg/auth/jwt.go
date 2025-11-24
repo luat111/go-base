@@ -7,18 +7,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type JWTPayload interface {
-	GetID() string
-	GetDeviceID() string
-	GetType() SessionType
-	GetAllowed() []string
-
-	// Optional helpers similar to BaseJWTPayload
-	GetIssuedAt() time.Time
-	GetExpiresAt() time.Time
-}
-
-
 type JWTSigner interface {
 	Sign(payload JWTPayload, secret string, ttl time.Duration) (string, error)
 	Verify(tokenStr, secret string) (JWTPayload, error)
@@ -68,3 +56,60 @@ func (s *defaultJWTSigner) Decode(tokenStr string) (JWTPayload, error) {
 	}
 	return s.keyFunc(mc), nil
 }
+
+// Jwt Payload
+
+type JWTPayload interface {
+	GetID() string
+	GetDeviceID() string
+	GetType() SessionType
+	GetAllowed() []string
+
+	// Optional helpers similar to BaseJWTPayload
+	// GetIssuedAt() time.Time
+	// GetExpiresAt() time.Time
+}
+
+type defaultJWTPayload struct {
+	id          string
+	deviceId    string
+	sessionType SessionType
+	allowed     []string
+}
+
+func newJwtPayload(
+	id, deviceId string,
+	sessionType SessionType,
+	allowed []string,
+) JWTPayload {
+	return &defaultJWTPayload{
+		id:          id,
+		deviceId:    deviceId,
+		sessionType: sessionType,
+		allowed:     allowed,
+	}
+}
+
+func (p *defaultJWTPayload) GetID() string {
+	return p.id
+}
+
+func (p *defaultJWTPayload) GetDeviceID() string {
+	return p.deviceId
+}
+
+func (p *defaultJWTPayload) GetType() SessionType {
+	return p.sessionType
+}
+
+func (p *defaultJWTPayload) GetAllowed() []string {
+	return p.allowed
+}
+
+// func (p *defaultJWTPayload) GetIssuedAt() time.Time {
+// 	return p.issuedAt
+// }
+
+// func (p *defaultJWTPayload) GetExpiresAt() time.Time {
+// 	return p.expiresAt
+// }
