@@ -48,5 +48,11 @@ EXPOSE 8080
 # Use non-root user (distroless nonroot user)
 USER nonroot:nonroot
 
+# Health check - checks if the app is responding on the health endpoint
+# Note: Distroless images don't have curl/wget, so we use a simple TCP check
+# For HTTP health checks, consider using a sidecar or external monitoring
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD ["/app/server", "-health-check"] || exit 1
+
 # Run the application
 ENTRYPOINT ["/app/server"]
