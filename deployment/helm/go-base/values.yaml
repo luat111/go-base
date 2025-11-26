@@ -1,0 +1,241 @@
+# Default values for go-base Helm chart
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  environment: production
+  domain: example.com
+
+# Application configuration
+app:
+  name: go-base
+  replicaCount: 3
+  
+  image:
+    repository: your-registry/go-base
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  
+  imagePullSecrets: []
+  
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+    annotations: {}
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 500m
+      memory: 256Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  
+  env:
+    - name: ENV
+      value: "production"
+    - name: PORT
+      value: "8080"
+    - name: LOG_LEVEL
+      value: "info"
+  
+  envFrom:
+    - configMapRef:
+        name: go-base-config
+    - secretRef:
+        name: go-base-secrets
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  auth:
+    username: postgres
+    password: changeme
+    database: go_base
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: ""
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+  readReplicas:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+# Pgpool configuration
+pgpool:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: bitnami/pgpool
+    tag: latest
+  adminUsername: admin
+  adminPassword: changeme
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 250m
+      memory: 128Mi
+
+# Redis configuration
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: changeme
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+# RabbitMQ configuration
+rabbitmq:
+  enabled: true
+  auth:
+    username: guest
+    password: changeme
+  persistence:
+    enabled: true
+    size: 8Gi
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  replicaCount: 3
+  clustering:
+    enabled: true
+
+# Ingress / Gateway configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  hosts:
+    - host: api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: go-base-tls
+      hosts:
+        - api.example.com
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  fsGroup: 65532
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - go-base
+          topologyKey: kubernetes.io/hostname
+
+# ConfigMap data
+config:
+  API_PATH: "/api/v1"
+  CACHE_HOST: "go-base-redis-master"
+  CACHE_PORT: "6379"
+  CACHE_DB: "0"
+  PG_HOST: "go-base-pgpool"
+  PG_PORT: "5432"
+  PG_DB: "go_base"
+  RMQ_HOST: "go-base-rabbitmq"
+  RMQ_PORT: "5672"
+
+# Secrets (should be overridden in production)
+secrets:
+  PG_USER: "postgres"
+  PG_PWD: "changeme"
+  CACHE_PWD: "changeme"
+  RMQ_USER: "guest"
+  RMQ_PWD: "changeme"
+  RSA_PUBLIC_KEY: ""
+  RSA_PRIVATE_KEY: ""
+  JWT_SECRET: "changeme"

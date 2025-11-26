@@ -1,0 +1,81 @@
+{{- if and .Values.pgpool.enabled .Values.postgresql.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "go-base.fullname" . }}-pgpool
+  labels:
+    {{- include "go-base.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pgpool
+spec:
+  replicas: {{ .Values.pgpool.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "go-base.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: pgpool
+  template:
+    metadata:
+      labels:
+        {{- include "go-base.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: pgpool
+    spec:
+      containers:
+      - name: pgpool
+        image: "{{ .Values.pgpool.image.repository }}:{{ .Values.pgpool.image.tag }}"
+        ports:
+        - containerPort: 5432
+          name: pgpool
+        env:
+        - name: PGPOOL_BACKEND_NODES
+          value: "0:{{ include "go-base.fullname" . }}-postgresql:5432"
+        - name: PGPOOL_SR_CHECK_USER
+          value: {{ .Values.postgresql.auth.username | quote }}
+        - name: PGPOOL_SR_CHECK_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "go-base.fullname" . }}-secrets
+              key: PG_PWD
+        - name: PGPOOL_POSTGRES_USERNAME
+          value: {{ .Values.postgresql.auth.username | quote }}
+        - name: PGPOOL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "go-base.fullname" . }}-secrets
+              key: PG_PWD
+        - name: PGPOOL_ADMIN_USERNAME
+          value: {{ .Values.pgpool.adminUsername | quote }}
+        - name: PGPOOL_ADMIN_PASSWORD
+          value: {{ .Values.pgpool.adminPassword | quote }}
+        - name: PGPOOL_ENABLE_LOAD_BALANCING
+          value: "yes"
+        - name: PGPOOL_MAX_POOL
+          value: "15"
+        resources:
+          {{- toYaml .Values.pgpool.resources | nindent 12 }}
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "go-base.fullname" . }}-pgpool
+  labels:
+    {{- include "go-base.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pgpool
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: pgpool
+    name: pgpool
+  selector:
+    {{- include "go-base.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: pgpool
+{{- end }}

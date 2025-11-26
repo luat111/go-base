@@ -1,0 +1,95 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "go-base.fullname" . }}-postgresql
+  labels:
+    {{- include "go-base.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  serviceName: {{ include "go-base.fullname" . }}-postgresql
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "go-base.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        {{- include "go-base.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: database
+    spec:
+      containers:
+      - name: postgresql
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+          name: postgresql
+        env:
+        - name: POSTGRES_USER
+          value: {{ .Values.postgresql.auth.username | quote }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "go-base.fullname" . }}-secrets
+              key: PG_PWD
+        - name: POSTGRES_DB
+          value: {{ .Values.postgresql.auth.database | quote }}
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          {{- toYaml .Values.postgresql.primary.resources | nindent 12 }}
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgresql.auth.username }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgresql.auth.username }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  {{- if .Values.postgresql.primary.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if .Values.postgresql.primary.persistence.storageClass }}
+      storageClassName: {{ .Values.postgresql.primary.persistence.storageClass }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.postgresql.primary.persistence.size }}
+  {{- else }}
+  volumes:
+  - name: data
+    emptyDir: {}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "go-base.fullname" . }}-postgresql
+  labels:
+    {{- include "go-base.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: postgresql
+    name: postgresql
+  selector:
+    {{- include "go-base.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+{{- end }}

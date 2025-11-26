@@ -1,0 +1,97 @@
+{{- if .Values.rabbitmq.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "go-base.fullname" . }}-rabbitmq
+  labels:
+    {{- include "go-base.labels" . | nindent 4 }}
+    app.kubernetes.io/component: messaging
+spec:
+  serviceName: {{ include "go-base.fullname" . }}-rabbitmq
+  replicas: {{ .Values.rabbitmq.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "go-base.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: messaging
+  template:
+    metadata:
+      labels:
+        {{- include "go-base.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: messaging
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management-alpine
+        ports:
+        - containerPort: 5672
+          name: amqp
+        - containerPort: 15672
+          name: management
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          value: {{ .Values.rabbitmq.auth.username | quote }}
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "go-base.fullname" . }}-secrets
+              key: RMQ_PWD
+        {{- if .Values.rabbitmq.clustering.enabled }}
+        - name: RABBITMQ_ERLANG_COOKIE
+          value: "secret-cookie"
+        {{- end }}
+        resources:
+          {{- toYaml .Values.rabbitmq.resources | nindent 12 }}
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/rabbitmq
+        livenessProbe:
+          exec:
+            command:
+            - rabbitmq-diagnostics
+            - -q
+            - ping
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - rabbitmq-diagnostics
+            - -q
+            - check_port_connectivity
+          initialDelaySeconds: 20
+          periodSeconds: 10
+  {{- if .Values.rabbitmq.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.rabbitmq.persistence.size }}
+  {{- else }}
+  volumes:
+  - name: data
+    emptyDir: {}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "go-base.fullname" . }}-rabbitmq
+  labels:
+    {{- include "go-base.labels" . | nindent 4 }}
+    app.kubernetes.io/component: messaging
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5672
+    targetPort: amqp
+    name: amqp
+  - port: 15672
+    targetPort: management
+    name: management
+  selector:
+    {{- include "go-base.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: messaging
+{{- end }}

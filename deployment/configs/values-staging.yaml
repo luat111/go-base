@@ -1,0 +1,86 @@
+# Staging values for go-base
+# Override default values for staging environment
+
+global:
+  environment: staging
+  domain: staging.your-domain.com
+
+app:
+  replicaCount: 2
+  
+  image:
+    repository: your-registry.azurecr.io/go-base
+    tag: "latest"
+    pullPolicy: Always
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 500m
+      memory: 256Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+
+postgresql:
+  enabled: true
+  auth:
+    username: postgres
+    password: "staging-password"
+    database: go_base_staging
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+pgpool:
+  enabled: true
+  replicaCount: 1
+
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: "staging-redis-password"
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+
+rabbitmq:
+  enabled: true
+  auth:
+    username: guest
+    password: "staging-rabbitmq-password"
+  persistence:
+    enabled: true
+    size: 5Gi
+  replicaCount: 1
+  clustering:
+    enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+  hosts:
+    - host: api-staging.your-domain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: go-base-staging-tls
+      hosts:
+        - api-staging.your-domain.com
