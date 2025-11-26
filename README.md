@@ -11,7 +11,7 @@
 -   [x] Logging (ELK - take too much resource, DB logger: TODO save error query to DB)
 -   [x] Base Repository
 -   [x] Encrypt Payload
--   [ ] Audit
+-   [x] Audit
 -   [x] Outbox message
 -   [x] Circuit Breaker
 -   [x] Cron
