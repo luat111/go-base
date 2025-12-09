@@ -1,0 +1,38 @@
+{{- if .Values.serviceMesh.enabled }}
+{{- if eq .Values.serviceMesh.provider "linkerd" }}
+apiVersion: policy.linkerd.io/v1beta3
+kind: Server
+metadata:
+  name: {{ include "go-base.fullname" . }}-http
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "go-base.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "go-base.selectorLabels" . | nindent 6 }}
+  port: http
+  proxyProtocol: {{ if .Values.serviceMesh.linkerd.http2.enabled }}HTTP/2{{ else }}HTTP/1{{ end }}
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: ServerAuthorization
+metadata:
+  name: {{ include "go-base.fullname" . }}-allow-all
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "go-base.labels" . | nindent 4 }}
+spec:
+  server:
+    name: {{ include "go-base.fullname" . }}-http
+  client:
+    meshTLS:
+      {{- if eq .Values.serviceMesh.linkerd.mtls.mode "strict" }}
+      identities:
+        - "*"
+      {{- else }}
+      unauthenticated: true
+      identities:
+        - "*"
+      {{- end }}
+{{- end }}
+{{- end }}

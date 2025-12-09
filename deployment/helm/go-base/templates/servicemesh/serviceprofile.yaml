@@ -1,0 +1,43 @@
+{{- if .Values.serviceMesh.enabled }}
+{{- if eq .Values.serviceMesh.provider "linkerd" }}
+{{- if .Values.serviceMesh.linkerd.serviceProfiles.enabled }}
+apiVersion: linkerd.io/v1alpha2
+kind: ServiceProfile
+metadata:
+  name: {{ include "go-base.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "go-base.labels" . | nindent 4 }}
+spec:
+  routes:
+  - name: health
+    condition:
+      method: GET
+      pathRegex: /health
+    {{- if .Values.serviceMesh.linkerd.retries.enabled }}
+    isRetryable: false  # Health checks should not be retried
+    {{- end }}
+    {{- if .Values.serviceMesh.linkerd.timeouts.request }}
+    timeout: {{ .Values.serviceMesh.linkerd.timeouts.request }}
+    {{- end }}
+  
+  - name: api
+    condition:
+      method: GET|POST|PUT|DELETE|PATCH
+      pathRegex: /.*
+    {{- if .Values.serviceMesh.linkerd.retries.enabled }}
+    isRetryable: true
+    {{- end }}
+    {{- if .Values.serviceMesh.linkerd.timeouts.request }}
+    timeout: {{ .Values.serviceMesh.linkerd.timeouts.request }}
+    {{- end }}
+  
+  {{- if .Values.serviceMesh.linkerd.retries.enabled }}
+  retryBudget:
+    retryRatio: {{ .Values.serviceMesh.linkerd.retries.retryBudget }}
+    minRetriesPerSecond: 10
+    ttl: 10s
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -178,6 +178,73 @@ ingress:
       hosts:
         - api.example.com
 
+# Service Mesh configuration
+serviceMesh:
+  enabled: true
+  provider: linkerd  # Options: linkerd, istio
+  
+  linkerd:
+    # Inject Linkerd proxy into pods
+    inject: enabled
+    
+    # Proxy resource limits
+    proxy:
+      resources:
+        cpu:
+          request: "100m"
+          limit: "500m"
+        memory:
+          request: "50Mi"
+          limit: "128Mi"
+      # Enable native sidecar (Kubernetes 1.29+)
+      nativeSidecar: true
+    
+    # HTTP/2 connection settings
+    http2:
+      enabled: true
+      # Enable automatic HTTP/2 upgrade
+      autoUpgrade: true
+      # Maximum concurrent streams per connection
+      maxConcurrentStreams: 100
+    
+    # Retry policy for failed requests
+    retries:
+      enabled: true
+      maxRetries: 3
+      # HTTP status codes that trigger retries
+      retryableStatusCodes:
+        - 502
+        - 503
+        - 504
+      # Budget: max percentage of additional load from retries
+      retryBudget: 0.2
+    
+    # Timeout settings
+    timeouts:
+      # Per-request timeout
+      request: "10s"
+      # Idle connection timeout
+      idle: "60s"
+      # Response header timeout
+      responseHeader: "10s"
+    
+    # Load balancing configuration
+    loadBalancing:
+      # Algorithm: ewma (Exponentially Weighted Moving Average) for latency-aware LB
+      algorithm: ewma
+    
+    # Mutual TLS settings
+    mtls:
+      enabled: true
+      # Mode: strict (all connections must be mTLS) or permissive (allow plaintext)
+      mode: strict
+    
+    # Service profiles for advanced traffic management
+    serviceProfiles:
+      enabled: true
+      # Auto-create service profiles for discovered services
+      autoCreate: true
+
 # Service Account
 serviceAccount:
   create: true

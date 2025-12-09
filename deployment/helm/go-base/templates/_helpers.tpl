@@ -58,3 +58,28 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Linkerd annotations for pod injection
+*/}}
+{{- define "go-base.linkerd.annotations" -}}
+{{- if .Values.serviceMesh.enabled }}
+{{- if eq .Values.serviceMesh.provider "linkerd" }}
+linkerd.io/inject: {{ .Values.serviceMesh.linkerd.inject }}
+{{- if .Values.serviceMesh.linkerd.proxy.resources }}
+config.linkerd.io/proxy-cpu-request: {{ .Values.serviceMesh.linkerd.proxy.resources.cpu.request | quote }}
+config.linkerd.io/proxy-memory-request: {{ .Values.serviceMesh.linkerd.proxy.resources.memory.request | quote }}
+config.linkerd.io/proxy-cpu-limit: {{ .Values.serviceMesh.linkerd.proxy.resources.cpu.limit | quote }}
+config.linkerd.io/proxy-memory-limit: {{ .Values.serviceMesh.linkerd.proxy.resources.memory.limit | quote }}
+{{- end }}
+{{- if .Values.serviceMesh.linkerd.proxy.nativeSidecar }}
+config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
+{{- end }}
+{{- if .Values.serviceMesh.linkerd.http2.enabled }}
+{{- if .Values.serviceMesh.linkerd.http2.autoUpgrade }}
+config.linkerd.io/enable-http2-upgrade: "true"
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
