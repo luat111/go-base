@@ -82,4 +82,33 @@ config.linkerd.io/enable-http2-upgrade: "true"
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Search engine host
+*/}}
+{{- define "go-base.search.host" -}}
+{{- if eq .Values.search.provider "manticore" }}
+{{- printf "%s-manticore" (include "go-base.fullname" .) }}
+{{- else if eq .Values.search.provider "elasticsearch" }}
+{{- printf "%s-elasticsearch" (include "go-base.fullname" .) }}
+{{- end }}
+{{- end }}
+
+{{/*
+Search engine HTTP port
+*/}}
+{{- define "go-base.search.port" -}}
+{{- if eq .Values.search.provider "manticore" }}
+{{- .Values.search.manticore.service.httpPort }}
+{{- else if eq .Values.search.provider "elasticsearch" }}
+{{- .Values.search.elasticsearch.service.httpPort }}
+{{- end }}
+{{- end }}
+
+{{/*
+Search engine URL
+*/}}
+{{- define "go-base.search.url" -}}
+{{- printf "http://%s:%v" (include "go-base.search.host" .) (include "go-base.search.port" .) }}
+{{- end }}
 {{- end }}

@@ -8,3 +8,11 @@ data:
   {{- range $key, $value := .Values.config }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  # Search engine configuration
+  SEARCH_PROVIDER: {{ .Values.search.provider | quote }}
+  SEARCH_HOST: {{ include "go-base.search.host" . | quote }}
+  SEARCH_PORT: {{ include "go-base.search.port" . | quote }}
+  SEARCH_URL: {{ include "go-base.search.url" . | quote }}
+  {{- if eq .Values.search.provider "manticore" }}
+  SEARCH_SQL_PORT: {{ .Values.search.manticore.service.sqlPort | quote }}
+  {{- end }}

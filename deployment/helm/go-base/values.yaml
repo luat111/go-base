@@ -245,6 +245,88 @@ serviceMesh:
       # Auto-create service profiles for discovered services
       autoCreate: true
 
+# Search Engine configuration
+# Choose ONE: manticore or elasticsearch
+search:
+  # Provider: manticore or elasticsearch
+  provider: manticore
+  
+  # Manticore Search (fast, lightweight, SQL support)
+  manticore:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: manticoresearch/manticore
+      tag: latest
+      pullPolicy: IfNotPresent
+    
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: ""
+    
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    
+    service:
+      type: ClusterIP
+      # SQL port for mysql protocol
+      sqlPort: 9306
+      # HTTP port for JSON API
+      httpPort: 9308
+    
+    config:
+      # Maximum matches to return
+      maxMatches: 1000
+      # RT memory limit
+      rtMemLimit: "128M"
+      # Number of threads
+      threads: 4
+  
+  # Elasticsearch (mature ecosystem, complex analytics)
+  elasticsearch:
+    enabled: false
+    replicaCount: 1
+    image:
+      repository: docker.elastic.co/elasticsearch/elasticsearch
+      tag: 8.11.0
+      pullPolicy: IfNotPresent
+    
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: ""
+    
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+    
+    service:
+      type: ClusterIP
+      # REST API port
+      httpPort: 9200
+      # Transport port (node-to-node)
+      transportPort: 9300
+    
+    config:
+      # Cluster name
+      clusterName: go-base-search
+      # Java heap size
+      javaOpts: "-Xms2g -Xmx2g"
+      # Disable security for simplicity (enable in production)
+      xpackSecurityEnabled: false
+      # Single node mode
+      discoveryType: single-node
+
 # Service Account
 serviceAccount:
   create: true
