@@ -1,9 +1,0 @@
----
-alwaysApply: true
-globs: */pkg/app/*.go
----
-## App initialization (`pkg/app`)
-- Use `app.New[EnvInterface any](config.EnvOptions)` as the **primary entrypoint** to bootstrap services.
-- All new applications should load configuration via `pkg/config` and use `pkg/container.Container` for shared dependencies (databases, caches, messaging, loggers).
-- When extending initialization (adding new infra like metrics or tracing), prefer new methods on `App` or `Container` instead of ad-hoc globals.
-- Ensure `App` setup remains **fast and side-effect free** until `Run`/`Serve`-style methods are called (no network connections in constructors).

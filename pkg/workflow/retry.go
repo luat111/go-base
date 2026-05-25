@@ -40,7 +40,9 @@ func (w *WorkflowExecutor[T]) Execute(ctx context.Context) error {
 							WorkflowName:   w.props.Name,
 							MaxAttempts:    w.props.MaxAttempt,
 							ProcessResults: w.ProcessResults,
-							Payload:        w.Payload,
+							Payload:        w.props.Payload,
+							StartedTime:    time.Now(),
+							FinishedTime:   time.Now(),
 						},
 					},
 				)

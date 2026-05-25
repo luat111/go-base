@@ -30,13 +30,13 @@ type IAuditRepository interface {
 
 // AuditRepository implements IAuditRepository by extending BaseRepository
 type AuditRepository struct {
-	*repository.BaseRepository
+	*repository.BaseRepository[AuditLog]
 }
 
 // NewAuditRepository creates a new audit repository instance
 func NewAuditRepository(db *gorm.DB) IAuditRepository {
 	return &AuditRepository{
-		BaseRepository: repository.NewBaseRepository(db, &AuditLog{}),
+		BaseRepository: repository.NewBaseRepository[AuditLog](db, &AuditLog{}),
 	}
 }
 

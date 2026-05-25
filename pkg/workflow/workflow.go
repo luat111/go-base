@@ -3,46 +3,50 @@ package workflow
 import (
 	"cmp"
 	"context"
+	"errors"
 	"go-base/pkg"
 	"go-base/pkg/common"
 	"go-base/pkg/common/types"
 	"go-base/pkg/container"
 	"go-base/pkg/logger"
+	"go-base/pkg/tracing"
 	"sync"
 	"time"
 )
 
-type WorkflowProps struct {
-	Name       string
-	Payload    types.JSONB
-	MaxAttempt int
-	Schedule   string
-}
+type (
+	WorkflowProps struct {
+		Name       string
+		Payload    types.JSONB
+		MaxAttempt int
+		Schedule   string
+	}
 
-type WorkflowExecutor[T ~struct{ Workflow }] struct {
-	container *container.Container
-	cron      *pkg.Cronjob
-	repo      IWorkflowRepository[T]
+	WorkflowExecutor[T ~struct{ Workflow }] struct {
+		container *container.Container
+		cron      *pkg.Cronjob
+		repo      IWorkflowRepository[T]
 
-	// Executor to run the workflow
-	Executor    *Executor[T]
-	ExecuteFunc ExecuteFunc[T]
+		// Executor to run the workflow
+		Executor    *Executor[T]
+		ExecuteFunc ExecuteFunc[T]
 
-	// Workflow properties
-	props       WorkflowProps
-	retryConfig RetryConfig
+		// Workflow properties
+		props       WorkflowProps
+		retryConfig RetryConfig
 
-	// Workflow data
-	ProcessResults types.JSONB
-	Payload        types.JSONB
+		// Workflow data
+		ProcessResults types.JSONB
+		Payload        types.JSONB
 
-	stepOperators map[WorkflowStep]StepHandler
-	stepResults   map[WorkflowStep]StepHandler
+		stepOperators map[WorkflowStep]StepHandler
+		stepResults   map[WorkflowStep]StepHandler
 
-	logger logger.ILogger
+		logger logger.ILogger
 
-	mu sync.Mutex
-}
+		mu sync.Mutex
+	}
+)
 
 func NewWorkflowExecutor[T ~struct{ Workflow }](
 	ctn *container.Container,
@@ -131,6 +135,7 @@ func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, wf struct{ Workfl
 
 	duration := time.Since(startTime)
 
+	wf.Duration = duration
 	wf.Status = result
 	wf.StartedTime = startTime
 	wf.FinishedTime = startTime.Add(duration)
@@ -138,12 +143,12 @@ func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, wf struct{ Workfl
 	wf.ProcessResults = w.ProcessResults
 	wf.Finished = cmp.Or(wf.CurrentAttempt >= w.props.MaxAttempt, wf.isFinished())
 
-	w.repo.Update(ctx, wf.ID, &wf)
+	w.repo.Update(ctx, wf.ID, wf)
 
 	return true
 }
 
-func (w *WorkflowExecutor[T]) SetProcessResults(processResults map[string]any) {
+func (w *WorkflowExecutor[T]) SetProcessResults(processResults types.JSONB) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -157,3 +162,17 @@ func (w *WorkflowExecutor[T]) SetPayload(payload map[string]any) {
 	w.Payload = payload
 }
 
+func (w *WorkflowExecutor[T]) SaveResult(ctx context.Context) error {
+	id := tracing.FromContext(ctx)
+	if id == "" {
+		return errors.New("not found workflow id")
+	}
+
+	w.repo.Update(ctx, id, T{
+		Workflow: Workflow{
+			ProcessResults: w.ProcessResults,
+		},
+	})
+
+	return nil
+}

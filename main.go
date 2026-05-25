@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go-base/pkg/app"
 	"go-base/pkg/common/types"
@@ -81,14 +82,12 @@ func main() {
 	app.ConnectClients(map[string]string{"test": ":3003"})
 	helloService := NewHelloService(app.GetClient("test"))
 
-	encryptSvc,_ := encrypt.NewService(encrypt.CryptoConfig{
+	encryptSvc, _ := encrypt.NewService(encrypt.CryptoConfig{
 		PublicKeyPEM:  app.Config.Get("PUBLIC_KEY_PEM"),
 		PrivateKeyPEM: app.Config.Get("PRIVATE_KEY_PEM"),
 	})
 
-	group := app.Group("v1",encryptSvc.PayloadMiddleware(encrypt.MiddlewareConfig{
-		
-	}))
+	group := app.Group("v1", encryptSvc.PayloadMiddleware(encrypt.MiddlewareConfig{}))
 
 	app.GET(group, "/test", HelloHandler(helloService))
 	app.POST(group, "/test/:name/:test", new(UpdatePasswordData), TestPostHandler)
@@ -196,9 +195,18 @@ func NewWfController(app *app.App[AppConfig]) *WFCtrl {
 
 func (wctrl *WFCtrl) setup() {
 	wctrl.WorkflowExecutor.SetProcessResults(types.JSONB{
-		string(StepA): workflow.New,
-		string(StepB): workflow.New,
-		string(StepC): workflow.New,
+		string(StepA): &workflow.WorkflowProcess{
+			Status:   workflow.New,
+			Response: "pendingA",
+		},
+		string(StepB): &workflow.WorkflowProcess{
+			Status:   workflow.New,
+			Response: "pendingB",
+		},
+		string(StepC): &workflow.WorkflowProcess{
+			Status:   workflow.New,
+			Response: "pendingC",
+		},
 	})
 
 	wctrl.WorkflowExecutor.SetStepOperators(map[workflow.WorkflowStep]workflow.StepHandler{
@@ -209,15 +217,24 @@ func (wctrl *WFCtrl) setup() {
 
 	wctrl.WorkflowExecutor.SetStepResults(map[workflow.WorkflowStep]workflow.StepHandler{
 		StepA: func(ctx context.Context, args any) (workflow.WorkflowResult, error) {
-			return wctrl.GetStepResult(StepA), nil
+			// Check something then return step result
+			// result := wctrl.GetStepResult(StepA)
+
+			return workflow.Succeed, nil
 
 		},
 		StepB: func(ctx context.Context, args any) (workflow.WorkflowResult, error) {
-			return wctrl.GetStepResult(StepB), nil
+			// Check something then return step result
+			res, status := wctrl.GetStepResult(StepB)
+			fmt.Println(res)
+
+			return status, nil
 
 		},
 		StepC: func(ctx context.Context, args any) (workflow.WorkflowResult, error) {
-			return wctrl.GetStepResult(StepC), nil
+			// Check something then return step result
+			// return wctrl.GetStepResult(StepC), nil
+			return workflow.Succeed, nil
 
 		},
 	})
@@ -230,7 +247,7 @@ func (ctrl *WFCtrl) stepA(ctx context.Context, args any) (workflow.WorkflowResul
 
 func (ctrl *WFCtrl) stepB(ctx context.Context, args any) (workflow.WorkflowResult, error) {
 	fmt.Println(args)
-	return workflow.Succeed, nil
+	return workflow.Failed, errors.New("Test Error")
 }
 
 func (ctrl *WFCtrl) stepC(ctx context.Context, args any) (workflow.WorkflowResult, error) {
@@ -250,6 +267,8 @@ func wfExec(
 		return workflow.Failed, err
 	}
 
+	executor.WfExec.OverrideStepResponse(StepA, "done")
+
 	resB, err := executor.Execute(ctx, StepB, "execute step B")
 	if err != nil || resB != workflow.Succeed {
 		return workflow.Rerun, err
@@ -260,7 +279,7 @@ func wfExec(
 		return workflow.Rerun, err
 	}
 
-	repo.Save(ctx, &TestWorkflow{
+	repo.Save(ctx, TestWorkflow{
 		Workflow: workflow.Workflow{Status: workflow.Completed},
 	})
 

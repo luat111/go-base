@@ -2,11 +2,19 @@ package workflow
 
 import (
 	"context"
+	"errors"
 )
 
-type WorkflowStep string
+type (
+	WorkflowStep string
 
-type StepHandler func(ctx context.Context, args any) (WorkflowResult, error)
+	StepHandler func(ctx context.Context, args any) (WorkflowResult, error)
+
+	WorkflowProcess struct {
+		Status   WorkflowResult
+		Response any
+	}
+)
 
 func (w *WorkflowExecutor[T]) SetStepOperators(stepOperators map[WorkflowStep]StepHandler) {
 	w.stepOperators = stepOperators
@@ -16,22 +24,39 @@ func (w *WorkflowExecutor[T]) SetStepResults(stepResults map[WorkflowStep]StepHa
 	w.stepResults = stepResults
 }
 
-func (w *WorkflowExecutor[T]) GetStepResult(step WorkflowStep) WorkflowResult {
+func (w *WorkflowExecutor[T]) GetStepResult(step WorkflowStep) (WorkflowProcess, WorkflowResult) {
 	result := w.ProcessResults[string(step)]
 
-	cvrt, ok := result.(string)
+	cvrt, ok := result.(WorkflowProcess)
 	if !ok {
-		return Failed
+		return cvrt, Failed
 	}
 
-	result = WorkflowResult(cvrt)
+	status := WorkflowResult(cvrt.Status)
 
-	return result.(WorkflowResult)
+	return cvrt, status
 }
 
-func (w *WorkflowExecutor[T]) SetStepResult(step WorkflowStep, result any) {
+func (w *WorkflowExecutor[T]) SetStepResult(step WorkflowStep, result WorkflowProcess) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	w.ProcessResults[string(step)] = result
+}
+
+func (w *WorkflowExecutor[T]) OverrideStepResponse(step WorkflowStep, response any) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	result := w.ProcessResults[string(step)]
+	convert, ok := result.(*WorkflowProcess)
+	if !ok {
+		w.logger.Error("Can not convert step result")
+		return errors.New("Can not convert step result")
+	}
+
+	convert.Response = response
+	w.ProcessResults[string(step)] = result
+
+	return nil
 }

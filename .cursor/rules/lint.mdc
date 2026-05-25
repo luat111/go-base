@@ -1,7 +1,0 @@
----
-alwaysApply: true
----
-
-## Formatting & lint
-- Run `gofmt -w` (or `goimports -w`) on every modified `.go` file before committing.
-- Avoid manual changes to generated files under `proto/` unless re-running `protoc`.

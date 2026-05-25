@@ -2,45 +2,45 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"gorm.io/gorm"
 )
 
-type BaseRepository struct {
+type BaseRepository[T any] struct {
 	DB     *gorm.DB
-	entity any
+	entity *T
 }
 
-func NewBaseRepository(db *gorm.DB, entity any) *BaseRepository {
-	return &BaseRepository{DB: db, entity: entity}
+func NewBaseRepository[T any](db *gorm.DB, entity *T) *BaseRepository[T] {
+	return &BaseRepository[T]{DB: db, entity: entity}
 }
 
 // Transaction handling
-func (r *BaseRepository) WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error {
-	return r.DB.Model(r.entity).WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+func (r *BaseRepository[T]) WithTransaction(ctx context.Context, fn func(tx *gorm.DB) error) error {
+	return r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return fn(tx)
 	})
 }
 
 // Create a record
-func (r *BaseRepository) Create(ctx context.Context, entity any) error {
-	fmt.Println(entity)
-	return r.DB.Model(r.entity).WithContext(ctx).Create(entity).Error
+func (r *BaseRepository[T]) Create(ctx context.Context, entity *T) error {
+	return gorm.G[T](r.DB).Create(ctx, entity)
 }
 
 // Update a record
-func (r *BaseRepository) Update(ctx context.Context, id string, entity any) error {
-	return r.DB.Model(r.entity).WithContext(ctx).Where("id = ?", id).Updates(entity).Error
+func (r *BaseRepository[T]) Update(ctx context.Context, id string, entity T) error {
+	_, err := gorm.G[T](r.DB).Where("id = ?", id).Updates(ctx, entity)
+	return err
 }
 
 // Delete a record
-func (r *BaseRepository) Delete(ctx context.Context, id string) error {
-	return r.DB.Model(r.entity).WithContext(ctx).Delete(r.entity, id).Error
+func (r *BaseRepository[T]) DeleteById(ctx context.Context, id string) error {
+	_, err := gorm.G[T](r.DB).Where("id = ?", id).Delete(ctx)
+	return err
 }
 
 // Find records based on a query function
-func (r *BaseRepository) Find(ctx context.Context, result any, queryFunc func(db *gorm.DB) *gorm.DB) error {
+func (r *BaseRepository[T]) Find(ctx context.Context, result any, queryFunc func(db *gorm.DB) *gorm.DB) error {
 	db := r.DB.Model(r.entity).WithContext(ctx)
 
 	// Apply query function
@@ -51,12 +51,18 @@ func (r *BaseRepository) Find(ctx context.Context, result any, queryFunc func(db
 }
 
 // Find by ID
-func (r *BaseRepository) FindByID(ctx context.Context, id any) error {
-	return r.DB.Model(r.entity).WithContext(ctx).First(r.entity, id).Error
+func (r *BaseRepository[T]) FindByID(ctx context.Context, id any) (T, error) {
+	return gorm.G[T](r.DB).Where("id = ?", id).First(ctx)
+}
+
+// Check Exist
+func (r *BaseRepository[T]) IsIdExisted(ctx context.Context, id string) bool {
+	_, err := r.FindByID(ctx, id)
+	return err == nil
 }
 
 // Pagination handling
-func (r *BaseRepository) Paginate(ctx context.Context, page, pageSize int, result any, queryFunc func(db *gorm.DB) *gorm.DB) (int64, error) {
+func (r *BaseRepository[T]) Paginate(ctx context.Context, page, pageSize int, result any, queryFunc func(db *gorm.DB) *gorm.DB) (int64, error) {
 	var total int64
 	db := r.DB.Model(r.entity).WithContext(ctx)
 

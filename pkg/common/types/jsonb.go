@@ -6,14 +6,14 @@ import (
 	"errors"
 )
 
-type JSONB map[string]interface{}
+type JSONB map[string]any
 
 func (a JSONB) Value() (driver.Value, error) {
 	return json.Marshal(a)
 }
 
 // Scan Unmarshal
-func (a *JSONB) Scan(value interface{}) error {
+func (a *JSONB) Scan(value any) error {
 	b, ok := value.([]byte)
 	if !ok {
 		return errors.New("type assertion to []byte failed")

@@ -1,6 +1,0 @@
----
-alwaysApply: false
----
-## Testing
-- Default verification command: `go test ./...`.
-- When proto definitions change, regenerate stubs via the Makefile targets (`make gen-test`, `make gen-common`, etc.) before running tests.

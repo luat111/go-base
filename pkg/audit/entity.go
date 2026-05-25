@@ -1,17 +1,12 @@
 package audit
 
 import (
-	"time"
-
-	"gorm.io/gorm"
+	entity "go-base/pkg/datasource/postgres/entities"
 )
 
 // AuditLog represents an audit trail entry for tracking actions
 type AuditLog struct {
-	ID        uint           `gorm:"primarykey" json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+	entity.BaseEntity
 
 	// Actor information
 	ActorID   string `gorm:"index;size:255" json:"actor_id"`

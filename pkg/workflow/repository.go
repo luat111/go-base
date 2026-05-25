@@ -7,18 +7,20 @@ import (
 	"go-base/pkg/tracing"
 )
 
-type IWorkflowRepository[T ~struct{ Workflow }] interface {
-	GetRerunWorkflows(ctx context.Context) ([]T, error)
-	CreateWorkflow(ctx context.Context, payload any) error
-	Update(ctx context.Context, id string, payload any) error
-	Save(ctx context.Context, payload any) error
-}
+type (
+	IWorkflowRepository[T ~struct{ Workflow }] interface {
+		GetRerunWorkflows(ctx context.Context) ([]T, error)
+		CreateWorkflow(ctx context.Context, payload *T) error
+		Update(ctx context.Context, id string, payload T) error
+		Save(ctx context.Context, payload T) error
+	}
 
-type WorkflowRepository[T ~struct{ Workflow }] struct {
-	baseRepo *repository.BaseRepository
-}
+	WorkflowRepository[T ~struct{ Workflow }] struct {
+		baseRepo *repository.BaseRepository[T]
+	}
+)
 
-func NewWorkflowRepository[T ~struct{ Workflow }](repo *repository.BaseRepository) IWorkflowRepository[T] {
+func NewWorkflowRepository[T ~struct{ Workflow }](repo *repository.BaseRepository[T]) IWorkflowRepository[T] {
 	return &WorkflowRepository[T]{baseRepo: repo}
 }
 
@@ -32,24 +34,23 @@ func (w *WorkflowRepository[T]) GetRerunWorkflows(ctx context.Context) ([]T, err
 	return workflows, err
 }
 
-func (w *WorkflowRepository[T]) CreateWorkflow(ctx context.Context, payload any) error {
+func (w *WorkflowRepository[T]) CreateWorkflow(ctx context.Context, payload *T) error {
 	return w.baseRepo.Create(ctx, payload)
 }
 
-func (w *WorkflowRepository[T]) Update(ctx context.Context, id string, payload any) error {
+func (w *WorkflowRepository[T]) Update(ctx context.Context, id string, payload T) error {
 	return w.baseRepo.Update(ctx, id, payload)
 }
 
-func (w *WorkflowRepository[T]) Save(ctx context.Context, payload any) error {
+func (w *WorkflowRepository[T]) Save(ctx context.Context, payload T) error {
 	id := tracing.FromContext(ctx)
 	if id == "" {
 		return errors.New("not found workflow id")
 	}
 
-	wf := w.baseRepo.FindByID(ctx, id)
-
-	if wf == nil {
-		return w.CreateWorkflow(ctx, payload)
+	existed := w.baseRepo.IsIdExisted(ctx, id)
+	if existed {
+		return w.CreateWorkflow(ctx, &payload)
 	}
 
 	return w.baseRepo.Update(ctx, id, payload)
