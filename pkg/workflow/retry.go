@@ -13,6 +13,9 @@ type RetryConfig struct {
 }
 
 func (w *WorkflowExecutor[T]) Execute(ctx context.Context) error {
+	id := w.generateWfId(ctx)
+	ctx = tracing.WithCorrelationId(ctx, id)
+
 	err := retry.Do(
 		func() error {
 			_, err := w.ExecuteFunc(ctx, w.Executor, w.repo)
@@ -26,7 +29,6 @@ func (w *WorkflowExecutor[T]) Execute(ctx context.Context) error {
 		}),
 		retry.Attempts(w.retryConfig.MaxAttempt),
 		retry.OnRetry(func(n uint, err error) {
-			id := w.generateWfId(ctx)
 			if n == w.retryConfig.MaxAttempt-1 && err != nil {
 				w.logger.Warn("Saved workflow", "name", w.props.Name, "id", id)
 				w.repo.CreateWorkflow(ctx,
