@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+globs: */pkg/restful/*.go
+---
+## REST layer (`pkg/restful`)
+- Add HTTP handlers using the `Router` abstraction; avoid accessing `net/http` directly from outside `pkg/restful` unless absolutely necessary.
+- Register middleware through `Router.Use` and keep cross-cutting concerns (logging, CORS, timeouts, correlation IDs) in `pkg/restful/middlewares`.
+- Keep all HTTP-specific types (`HttpServer`, `Context`, request/response helpers) inside `pkg/restful` to keep calling code framework-agnostic.

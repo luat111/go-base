@@ -1,0 +1,8 @@
+---
+alwaysApply: false
+---
+
+## General
+- Assume Go 1.21+ with modules enabled.
+- Prefer absolute paths in tool calls and documentation.
+- Keep files ASCII unless the file already relies on Unicode.

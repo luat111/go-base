@@ -9,7 +9,7 @@ services:
     volumes:
       - cache:/data
     networks:
-      - gobase
+      - go-base
 
   postgres:
     container_name: postgres
@@ -27,7 +27,7 @@ services:
     ports:
       - ${PG_PORT}:5432
     networks:
-      - gobase
+      - go-base
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${PG_USER}"]
       interval: 10s
@@ -59,7 +59,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - gobase
+      - go-base
     healthcheck:
       test: ["CMD", "/opt/bitnami/scripts/pgpool/healthcheck.sh"]
       interval: 10s
@@ -72,7 +72,7 @@ services:
     container_name: rabbitmq
     restart: always
     networks:
-      - gobase
+      - go-base
     ports:
       - ${RMQ_PORT}:5672
       - ${RMQ_UI_PORT}:15672
@@ -81,7 +81,8 @@ services:
       - RABBITMQ_DEFAULT_PASS=${RMQ_PWD}
 
 networks:
-  gobase:
+  default:
+    name: go-base
     driver: bridge
 
 volumes:
