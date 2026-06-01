@@ -12,6 +12,7 @@ import (
 	rpc "go-base/pkg/grpc"
 	"go-base/pkg/mq"
 	"go-base/pkg/restful"
+	"go-base/pkg/tracing"
 	"go-base/pkg/workflow"
 	"go-base/proto"
 
@@ -66,13 +67,17 @@ func TestPostHandler(c *restful.Context) (any, error) {
 	return true, nil
 }
 
-func test(body []byte, metadata map[string]string, msg amqp091.Delivery) {
+func test(ctx context.Context, body []byte, metadata map[string]string, msg amqp091.Delivery) {
 	fmt.Println(body, metadata)
 }
 
 // Main
 
 func main() {
+	// Initialise the global OpenTelemetry TracerProvider (Auto SDK).
+	// Must be called before any HTTP server, gRPC server, or client is started.
+	tracing.Init()
+
 	appEnv := config.EnvOptions{
 		Path: "/", EnvInterface: AppConfig{},
 	}

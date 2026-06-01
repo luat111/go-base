@@ -12,6 +12,7 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -27,6 +28,8 @@ type GrpcServer struct {
 func NewGRPCServer(ctn *container.Container, port int) *GrpcServer {
 	return &GrpcServer{
 		Server: grpc.NewServer(
+			// Propagate W3C trace context from incoming gRPC metadata.
+			grpc.StatsHandler(otelgrpc.NewServerHandler()),
 			grpc.KeepaliveEnforcementPolicy(
 				keepalive.EnforcementPolicy{
 					MinTime:             5 * time.Second,

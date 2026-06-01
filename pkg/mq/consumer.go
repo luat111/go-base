@@ -8,10 +8,14 @@ import (
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"golang.org/x/sync/errgroup"
 )
 
-type HandlerFunc func(body []byte, metadata map[string]string, msg amqp091.Delivery)
+type HandlerFunc func(ctx context.Context, body []byte, metadata map[string]string, msg amqp091.Delivery)
 
 type Consumer struct {
 	Channel  *Channel
@@ -110,6 +114,20 @@ func (c *Consumer) ConsumeData(ctx context.Context, messages <-chan amqp091.Deli
 		if handler != nil {
 			metadata := TableToMap(msg.Headers)
 
+			// Extract W3C trace context from message headers so this
+			// consumer span is linked to the producer's trace.
+			carrier := amqpHeaderCarrier(metadata)
+			msgCtx := otel.GetTextMapPropagator().Extract(ctx, carrier)
+
+			tracer := otel.Tracer(tracerName)
+			msgCtx, span := tracer.Start(msgCtx, "mq.consume "+msg.RoutingKey)
+
+			span.SetAttributes(
+				attribute.String("messaging.system", "rabbitmq"),
+				semconv.MessagingDestinationName(msg.RoutingKey),
+				attribute.String("messaging.rabbitmq.routing_key", msg.RoutingKey),
+			)
+
 			var data any
 			json.Unmarshal(msg.Body, &data)
 
@@ -123,11 +141,14 @@ func (c *Consumer) ConsumeData(ctx context.Context, messages <-chan amqp091.Deli
 
 			c.Logger.Info("Receive message", "Message", logMsg)
 
-			handler(msg.Body, metadata, msg)
+			handler(msgCtx, msg.Body, metadata, msg)
 
 			if c.AutoAck {
 				msg.Ack(false)
 			}
+
+			span.SetStatus(codes.Ok, "")
+			span.End()
 		}
 	}
 }

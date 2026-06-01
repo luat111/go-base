@@ -29,13 +29,14 @@ func NewHTTPServer(
 ) *HttpServer {
 	correlationSvc := tracing.New()
 	prefixPath := cnf.Get(config.API_PATH)
+	appName := cnf.Get(config.APP_NAME)
 	log := logger.NewLogger(common.HTTPPrefix)
 
 	r := NewRouter(prefixPath)
 
 	r.Use(
 		// 	middleware.WSHandlerUpgrade(c, s.ws),
-		// 	middleware.Tracer,
+		middlewares.Tracing(appName),
 		middlewares.CORS(middlewareConfigs, r.RegisteredRoutes),
 		middlewares.SecureMiddleware,
 		correlationSvc.CorrelationMiddleware,

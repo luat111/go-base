@@ -8,6 +8,7 @@ import (
 	"go-base/pkg/tracing"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -47,6 +48,8 @@ func (g *GrpcServer) RegisterClient(name, addr string) error {
 		addr,
 		grpc.WithDefaultServiceConfig(roundRobinConfig),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		// Propagate W3C trace context to outgoing gRPC calls.
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:    10 * time.Second,
 			Timeout: 5 * time.Second,
