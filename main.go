@@ -12,7 +12,6 @@ import (
 	rpc "go-base/pkg/grpc"
 	"go-base/pkg/mq"
 	"go-base/pkg/restful"
-	"go-base/pkg/tracing"
 	"go-base/pkg/workflow"
 	"go-base/proto"
 
@@ -74,10 +73,6 @@ func test(ctx context.Context, body []byte, metadata map[string]string, msg amqp
 // Main
 
 func main() {
-	// Initialise the global OpenTelemetry TracerProvider (Auto SDK).
-	// Must be called before any HTTP server, gRPC server, or client is started.
-	tracing.Init()
-
 	appEnv := config.EnvOptions{
 		Path: "/", EnvInterface: AppConfig{},
 	}
@@ -186,7 +181,7 @@ func NewWfController(app *app.App[AppConfig]) *WFCtrl {
 				"b": "B",
 			},
 			MaxAttempt: 5,
-			Schedule:   "*/5 * * * * *",
+			Schedule:   "*/30 * * * *",
 		},
 		wfRepo,
 		wfExec,

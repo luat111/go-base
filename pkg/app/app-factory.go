@@ -7,6 +7,7 @@ import (
 	"go-base/pkg/grpc"
 	"go-base/pkg/logger"
 	"go-base/pkg/restful"
+	"go-base/pkg/tracing"
 	"strconv"
 )
 
@@ -15,6 +16,10 @@ func New[EnvInterface any](envOption config.EnvOptions) *App[EnvInterface] {
 	app.LoadConfig(envOption)
 	app.container = container.NewContainer(app.Config)
 	app.logger = logger.NewLogger(common.AppPrefix)
+
+	// Initialise the global OpenTelemetry TracerProvider (Auto SDK).
+	// Must be called before any HTTP server, gRPC server, or client is started.
+	tracing.Init()
 
 	// HTTP Server
 	port, err := strconv.Atoi(app.Config.Get(config.PORT))

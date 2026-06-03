@@ -34,37 +34,37 @@ services:
       timeout: 5s
       retries: 5
 
-  pgpool:
-    container_name: pgpool
-    image: bitnami/pgpool:latest
-    restart: always
-    env_file: .env
-    environment:
-      - PGPOOL_BACKEND_NODES=0:postgres:5432
-      - PGPOOL_SR_CHECK_USER=${PG_USER}
-      - PGPOOL_SR_CHECK_PASSWORD=${PG_PWD}
-      - PGPOOL_ENABLE_LDAP=no
-      - PGPOOL_POSTGRES_USERNAME=${PG_USER}
-      - PGPOOL_POSTGRES_PASSWORD=${PG_PWD}
-      - PGPOOL_ADMIN_USERNAME=${PGPOOL_ADMIN_USER:-admin}
-      - PGPOOL_ADMIN_PASSWORD=${PGPOOL_ADMIN_PWD:-adminpassword}
-      - PGPOOL_ENABLE_LOAD_BALANCING=yes
-      - PGPOOL_MAX_POOL=15
-      - PGPOOL_CHILD_LIFE_TIME=300
-      - PGPOOL_CONNECTION_LIFE_TIME=0
-      - PGPOOL_CLIENT_IDLE_LIMIT=0
-    ports:
-      - ${PGPOOL_PORT:-5433}:5432
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - go-base
-    healthcheck:
-      test: ["CMD", "/opt/bitnami/scripts/pgpool/healthcheck.sh"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # pgpool:
+  #   container_name: pgpool
+  #   image: pgpool/pgpool:latest
+  #   restart: always
+  #   env_file: .env
+  #   environment:
+  #     - PGPOOL_BACKEND_NODES=0:postgres:5432
+  #     - PGPOOL_SR_CHECK_USER=${PG_USER}
+  #     - PGPOOL_SR_CHECK_PASSWORD=${PG_PWD}
+  #     - PGPOOL_ENABLE_LDAP=no
+  #     - PGPOOL_POSTGRES_USERNAME=${PG_USER}
+  #     - PGPOOL_POSTGRES_PASSWORD=${PG_PWD}
+  #     - PGPOOL_ADMIN_USERNAME=${PGPOOL_ADMIN_USER:-admin}
+  #     - PGPOOL_ADMIN_PASSWORD=${PGPOOL_ADMIN_PWD:-adminpassword}
+  #     - PGPOOL_ENABLE_LOAD_BALANCING=yes
+  #     - PGPOOL_MAX_POOL=15
+  #     - PGPOOL_CHILD_LIFE_TIME=300
+  #     - PGPOOL_CONNECTION_LIFE_TIME=0
+  #     - PGPOOL_CLIENT_IDLE_LIMIT=0
+  #   ports:
+  #     - ${PGPOOL_PORT:-5433}:5432
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - go-base
+  #   healthcheck:
+  #     test: ["CMD", "/opt/bitnami/scripts/pgpool/healthcheck.sh"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
 
   rabbitmq:
@@ -81,8 +81,7 @@ services:
       - RABBITMQ_DEFAULT_PASS=${RMQ_PWD}
 
 networks:
-  default:
-    name: go-base
+  go-base:
     driver: bridge
 
 volumes:
