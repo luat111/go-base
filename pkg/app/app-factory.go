@@ -17,9 +17,13 @@ func New[EnvInterface any](envOption config.EnvOptions) *App[EnvInterface] {
 	app.container = container.NewContainer(app.Config)
 	app.logger = logger.NewLogger(common.AppPrefix)
 
-	// Initialise the global OpenTelemetry TracerProvider (Auto SDK).
+	// Initialise the global OpenTelemetry TracerProvider (OTLP gRPC exporter).
 	// Must be called before any HTTP server, gRPC server, or client is started.
-	tracing.Init()
+	if tracerShutdown, err := tracing.Init(app.Config, app.logger); err != nil {
+		app.logger.Error("failed to initialise OpenTelemetry TracerProvider", "err", err)
+	} else {
+		app.tracerShutdown = tracerShutdown
+	}
 
 	// HTTP Server
 	port, err := strconv.Atoi(app.Config.Get(config.PORT))

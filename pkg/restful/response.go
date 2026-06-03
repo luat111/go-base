@@ -99,5 +99,5 @@ func isNil(i any) bool {
 
 	v := reflect.ValueOf(i)
 
-	return v.Kind() == reflect.Ptr && v.IsNil()
+	return v.Kind() == reflect.Pointer && v.IsNil()
 }

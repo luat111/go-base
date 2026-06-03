@@ -12,6 +12,11 @@ func (a *App[EnvInterface]) Shutdown(ctx context.Context) error {
 
 	a.StopCron()
 
+	// Flush and close the OTLP TracerProvider so in-flight spans are exported.
+	if a.tracerShutdown != nil {
+		a.tracerShutdown()
+	}
+
 	if a.httpServer != nil {
 		err = errors.Join(err, a.httpServer.Shutdown(ctx))
 	}

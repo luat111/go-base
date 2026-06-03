@@ -15,8 +15,9 @@ type App[EnvInterface any] struct {
 	httpServer *restful.HttpServer
 	// metricServer *metricServer
 
-	container *container.Container
-	logger    logger.ILogger
+	container       *container.Container
+	logger          logger.ILogger
+	tracerShutdown  func()
 
 	grpcRegistered bool
 	httpRegistered bool

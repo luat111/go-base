@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"context"
 	"go-base/pkg/logger"
 	"go-base/pkg/tracing"
 	"net/http"
@@ -8,6 +9,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type RequestLog struct {
@@ -43,6 +47,10 @@ func Logging(logger logger.ILogger) func(c *gin.Context) {
 				Status:        res.status,
 			}
 
+			// Record the HTTP status code on the active OTel span so it is
+			// visible in the trace alongside the request log.
+			setHTTPSpanStatus(c.Request.Context(), res.status)
+
 			if logger != nil {
 				if res.status >= http.StatusInternalServerError {
 					logger.Error("HTTP", "Message", l)
@@ -55,6 +63,23 @@ func Logging(logger logger.ILogger) func(c *gin.Context) {
 		defer recover()
 
 		c.Next()
+	}
+}
+
+// setHTTPSpanStatus annotates the active span with the HTTP response status
+// code and marks the span as error when the status is 5xx.
+func setHTTPSpanStatus(ctx context.Context, statusCode int) {
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		return
+	}
+
+	span.SetAttributes(attribute.Int("http.response.status_code", statusCode))
+
+	if statusCode >= http.StatusInternalServerError {
+		span.SetStatus(codes.Error, http.StatusText(statusCode))
+	} else {
+		span.SetStatus(codes.Ok, "")
 	}
 }
 
