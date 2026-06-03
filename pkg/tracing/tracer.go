@@ -54,7 +54,7 @@ func Init(config config.Config, logger logger.ILogger) (shutdown func(), err err
 
 	// Service resource carries the service.name and any attributes from
 	// OTEL_RESOURCE_ATTRIBUTES.
-	serviceName := config.GetOrDefault("OTEL_SERVICE_NAME", "go-base")
+	serviceName := config.GetOrDefault("APP_NAME", "go-base")
 
 	res, err := resource.New(ctx,
 		resource.WithFromEnv(), // picks up OTEL_RESOURCE_ATTRIBUTES
@@ -62,7 +62,7 @@ func Init(config config.Config, logger logger.ILogger) (shutdown func(), err err
 		resource.WithOS(),
 		resource.WithAttributes(semconv.ServiceName(serviceName)),
 	)
-	
+
 	if err != nil {
 		// Non-fatal – proceed with a minimal resource.
 		res = resource.Default()
