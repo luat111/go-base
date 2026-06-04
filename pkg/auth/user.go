@@ -2,7 +2,6 @@ package auth
 
 import "context"
 
-
 type User interface {
 	GetID() string
 }

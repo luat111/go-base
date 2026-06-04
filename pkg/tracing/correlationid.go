@@ -37,7 +37,7 @@ func New() CorrelationIDService {
 // generated when EnforceHeader is true.
 func (m *CorrelationIDService) CorrelationMiddleware(c *gin.Context) {
 	headerName := m.getHeaderName()
-	
+
 	// corrId := c.Request.Header.Get(headerName)
 	// Prefer the OTel trace ID – it is already set by otelgin which runs first.
 	corrId := TraceIDFromContext(c.Request.Context())

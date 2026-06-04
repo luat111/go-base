@@ -17,7 +17,7 @@
 -   [x] Cron
 -   [x] GRpc
 -   [ ] CI/CD
--   [ ] Monitor
+-   [x] Monitor
 -   [ ] Permission
 
 # SCRIPT GEN RSA KEY

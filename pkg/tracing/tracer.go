@@ -74,7 +74,10 @@ func Init(config config.Config, logger logger.ILogger) (shutdown func(), err err
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 	)
 
+	mp, err := initMeter(ctx, logger, endpoint, res)
+
 	otel.SetTracerProvider(tp)
+	otel.SetMeterProvider(mp)
 
 	// W3C TraceContext + Baggage propagators allow trace context to be
 	// forwarded across HTTP headers, gRPC metadata, and MQ message headers.
@@ -88,7 +91,9 @@ func Init(config config.Config, logger logger.ILogger) (shutdown func(), err err
 	shutdown = func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+		
 		_ = tp.Shutdown(ctx)
+		_ = mp.Shutdown(ctx)
 	}
 
 	return shutdown, nil

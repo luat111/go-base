@@ -111,7 +111,7 @@
             "uid": "prometheus-ds"
           },
           "editorMode": "code",
-          "expr": "sum(rate(otel_col_exporter_sent_metric_points_total[1m]))",
+          "expr": "sum(rate(otelcol_exporter_sent_metric_points_total[1m]))",
           "instant": false,
           "legendFormat": "Metrics Rate",
           "range": true,

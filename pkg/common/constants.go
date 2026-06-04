@@ -10,15 +10,15 @@ const (
 )
 
 const (
-	AppPrefix = "APP"
+	AppPrefix       = "APP"
 	ContainerPrefix = "CONTAINER"
-	PGPrefix = "POSTGRES"
-	RedisPrefix = "REDIS"
-	PubsubPrefix = "PUBSUB"
-	MQPrefix = "MQ"
-	KafkaPrefix = "KAFKA"
-	CronPrefix = "CRON"
-	RPCPrefix = "GRPC"
-	HTTPPrefix = "HTTP"
-	WorkflowPrefix = "WORKFLOW"
+	PGPrefix        = "POSTGRES"
+	RedisPrefix     = "REDIS"
+	PubsubPrefix    = "PUBSUB"
+	MQPrefix        = "MQ"
+	KafkaPrefix     = "KAFKA"
+	CronPrefix      = "CRON"
+	RPCPrefix       = "GRPC"
+	HTTPPrefix      = "HTTP"
+	WorkflowPrefix  = "WORKFLOW"
 )

@@ -5,13 +5,12 @@ import (
 	"time"
 )
 
-
 type SessionType string
 
 const (
-	SessionSystem          SessionType = "SYSTEM"
-	SessionGuestUser       SessionType = "GUEST_USER"
-	SessionHybridUser      SessionType = "HYBRID_USER"
+	SessionSystem            SessionType = "SYSTEM"
+	SessionGuestUser         SessionType = "GUEST_USER"
+	SessionHybridUser        SessionType = "HYBRID_USER"
 	SessionAuthenticatedUser SessionType = "AUTHENTICATED_USER"
 )
 
@@ -29,12 +28,12 @@ type KVStore interface {
 }
 
 type Session struct {
-	ID          string
-	UserID      string
-	DeviceID    string
-	Secret      string
+	ID           string
+	UserID       string
+	DeviceID     string
+	Secret       string
 	RefreshToken string
-	ExpireAt    time.Time
-	UserAgent   string
-	IP          string
+	ExpireAt     time.Time
+	UserAgent    string
+	IP           string
 }

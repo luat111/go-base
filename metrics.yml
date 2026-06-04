@@ -69,8 +69,8 @@ services:
       - "${OTL_HTTP}:4318" # OTLP over HTTP receiver
       - "${OTL_BROWSER}:55679" # Browser
       - "${OTL_HEALTH}:13133" # Heath
-      - "9464" # Prometheus exporter
-      - "8888" # metrics endpoint
+      - "9464:9464" # Prometheus exporter
+      - "8888:8888" # metrics endpoint (collector self-telemetry)
     depends_on:
       - jaeger
     logging: *logging
