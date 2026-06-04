@@ -4,10 +4,6 @@ x-default-logging: &logging
     max-size: "5m"
     max-file: "2"
 
-networks:
-  go-base:
-    driver: bridge
-
 services:
   # ********************
   # Telemetry Components
@@ -22,7 +18,7 @@ services:
       - "--query.base-path"
       - "/jaeger/ui"
       - "--prometheus.server-url"
-      - "http://${PROMETHEUS_ADDR}"
+      - "http://prometheus:9090"
       - "--query.ui-config=/etc/jaeger-ui.json"
     deploy:
       resources:
@@ -40,37 +36,34 @@ services:
       - ./config/jaeger-ui.json:/etc/jaeger-ui.json
 
   # Grafana
-  # grafana:
-  #   image: grafana/grafana:9.5.7
-  #   container_name: grafana
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 100M
-  #   volumes:
-  #     - ./src/grafana/grafana.ini:/etc/grafana/grafana.ini
-  #     - ./src/grafana/provisioning/:/etc/grafana/provisioning/
-  #   ports:
-  #     - "${GRAFANA_PORT}:${GRAFANA_PORT}"
-  #   logging: *logging
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+    volumes:
+      - ./config/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./config/grafana/provisioning/:/etc/grafana/provisioning/
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    logging: *logging
 
   # OpenTelemetry Collector
   otelcol:
     image: otel/opentelemetry-collector-contrib:0.133.0
-    container_name: otel-col
+    container_name: otelcol
     deploy:
       resources:
         limits:
           memory: 125M
     restart: unless-stopped
-    command:
-      [
-        "--config=/etc/otelcol-config.yml",
-        "--config=/etc/otelcol-observability.yml",
-      ]
+    command: ["--config=/etc/otelcol-config.yml"]
     volumes:
       - ./config/otelcol-config.yml:/etc/otelcol-config.yml
-      - ./config/otelcol-observability.yml:/etc/otelcol-observability.yml
     ports:
       - "${OTL_RPC}:4317" # OTLP over gRPC receiver
       - "${OTL_HTTP}:4318" # OTLP over HTTP receiver
@@ -81,7 +74,6 @@ services:
     depends_on:
       - jaeger
     logging: *logging
-    # environment:
 
   # Prometheus
   prometheus:
@@ -103,5 +95,5 @@ services:
         limits:
           memory: 300M
     ports:
-      - "${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"
+      - "${PROMETHEUS_PORT}:9090"
     logging: *logging

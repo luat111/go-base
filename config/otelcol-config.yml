@@ -10,6 +10,9 @@ receivers:
             - "http://*"
             - "https://*"
 
+connectors:
+  spanmetrics:
+
 processors:
   batch:
   transform:
@@ -38,6 +41,15 @@ processors:
           - queueSize
 
 exporters:
+  otlp:
+    endpoint: "jaeger:4317"
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: "0.0.0.0:9464"
+    resource_to_telemetry_conversion:
+      enabled: true
+    enable_open_metrics: true
   debug:
     verbosity: detailed
 
@@ -46,16 +58,24 @@ extensions:
     endpoint: 0.0.0.0:55679
 
 service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
   extensions: [zpages]
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug]
+      exporters: [otlp, spanmetrics, debug]
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, spanmetrics]
       processors: [batch]
-      exporters: [debug]
+      exporters: [prometheus, debug]
     logs:
       receivers: [otlp]
       processors: [batch]

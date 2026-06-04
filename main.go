@@ -79,7 +79,7 @@ func main() {
 
 	app := app.New[AppConfig](appEnv)
 
-	app.ConnectClients(map[string]string{"test": ":3003"})
+	app.ConnectClients(map[string]string{"test": ":8003"})
 	helloService := NewHelloService(app.GetClient("test"))
 
 	encryptSvc, _ := encrypt.NewService(encrypt.CryptoConfig{
