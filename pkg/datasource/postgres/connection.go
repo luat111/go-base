@@ -57,11 +57,13 @@ func getConnectionString(dbConfig *DBConfig) string {
 }
 
 func getDBConfig(configs config.Config) *DBConfig {
+	pgport := configs.GetOrDefault("PG_PORT", strconv.Itoa(defaultDBPort))
+
 	return &DBConfig{
 		HostName:    configs.Get("PG_HOST"),
 		User:        configs.Get("PG_USER"),
 		Password:    configs.Get("PG_PWD"),
-		Port:        configs.GetOrDefault("PG_PORT", strconv.Itoa(defaultDBPort)),
+		Port:        configs.GetOrDefault("PGPOOL_PORT", pgport),
 		Database:    configs.Get("PG_DB"),
 		MaxOpenConn: maxDBOpenConns,
 		MaxIdleConn: maxDBIdleConns,

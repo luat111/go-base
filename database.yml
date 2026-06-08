@@ -34,37 +34,43 @@ services:
       timeout: 5s
       retries: 5
 
-  # pgpool:
-  #   container_name: pgpool
-  #   image: pgpool/pgpool:latest
-  #   restart: always
-  #   env_file: .env
-  #   environment:
-  #     - PGPOOL_BACKEND_NODES=0:postgres:5432
-  #     - PGPOOL_SR_CHECK_USER=${PG_USER}
-  #     - PGPOOL_SR_CHECK_PASSWORD=${PG_PWD}
-  #     - PGPOOL_ENABLE_LDAP=no
-  #     - PGPOOL_POSTGRES_USERNAME=${PG_USER}
-  #     - PGPOOL_POSTGRES_PASSWORD=${PG_PWD}
-  #     - PGPOOL_ADMIN_USERNAME=${PGPOOL_ADMIN_USER:-admin}
-  #     - PGPOOL_ADMIN_PASSWORD=${PGPOOL_ADMIN_PWD:-adminpassword}
-  #     - PGPOOL_ENABLE_LOAD_BALANCING=yes
-  #     - PGPOOL_MAX_POOL=15
-  #     - PGPOOL_CHILD_LIFE_TIME=300
-  #     - PGPOOL_CONNECTION_LIFE_TIME=0
-  #     - PGPOOL_CLIENT_IDLE_LIMIT=0
-  #   ports:
-  #     - ${PGPOOL_PORT:-5433}:5432
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   networks:
-  #     - go-base
-  #   healthcheck:
-  #     test: ["CMD", "/opt/bitnami/scripts/pgpool/healthcheck.sh"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  pgpool:
+    container_name: pgpool
+    image: pgpool/pgpool:latest
+    restart: always
+    env_file: .env
+    environment:
+      - PGPOOL_PARAMS_PORT=5432
+      - PGPOOL_PARAMS_BACKEND_HOSTNAME0=postgres
+      - PGPOOL_PARAMS_BACKEND_PORT0=5432
+      - PGPOOL_PARAMS_BACKEND_WEIGHT0=1
+      - PGPOOL_PARAMS_BACKEND_DATA_DIRECTORY0=/data/postgres
+      - PGPOOL_PARAMS_SR_CHECK_USER=${PG_USER}
+      - PGPOOL_PARAMS_SR_CHECK_PASSWORD=${PG_PWD}
+      - PGPOOL_PARAMS_LOAD_BALANCE_MODE=on
+      - PGPOOL_PARAMS_MAX_POOL=15
+      - PGPOOL_PARAMS_CHILD_LIFE_TIME=300
+      - PGPOOL_PARAMS_CONNECTION_LIFE_TIME=0
+      - PGPOOL_PARAMS_CLIENT_IDLE_LIMIT=0
+      - PGPOOL_PARAMS_ENABLE_POOL_HBA=on
+      - PGPOOL_PARAMS_PASSWORD_ENCRYPTION_METHOD=scram-sha-256
+      - PGPOOL_PARAMS_LDAP_ENABLED=off
+      - PG_USERNAME=${PG_USER}
+      - PG_PASSWORD=${PG_PWD}
+      - PCP_USER=${PGPOOL_ADMIN_USER:-admin}
+      - PCP_PASSWORD=${PGPOOL_ADMIN_PWD:-adminpassword}
+    ports:
+      - ${PGPOOL_PORT:-5433}:5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - go-base
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-p", "5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 
   rabbitmq:
