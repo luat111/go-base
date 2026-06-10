@@ -9,6 +9,7 @@ import (
 	"go-base/pkg/datasource/postgres"
 	"go-base/pkg/datasource/redis"
 	"go-base/pkg/datasource/redis/lock"
+	"go-base/pkg/datasource/redis/redsync"
 	"go-base/pkg/kafka"
 	"go-base/pkg/logger"
 	"go-base/pkg/mq"
@@ -23,11 +24,12 @@ type Container struct {
 	// metricsManager metrics.Manager
 	PubSub pubsub.Client
 
-	Redis  *redis.Redis
-	Locker *lock.Locker
-	DB     *postgres.DB
-	MQ     *mq.RabbitClient
-	Kafka  *kafka.KafkaClient
+	Redis   *redis.Redis
+	Locker  *lock.Locker
+	Redsync *redsync.Locker
+	DB      *postgres.DB
+	MQ      *mq.RabbitClient
+	Kafka   *kafka.KafkaClient
 
 	cron *pkg.Cronjob
 
@@ -61,6 +63,7 @@ func (c *Container) Create(conf config.Config) {
 	if conf.GetOrDefault(config.CACHE_HOST, "") != "" {
 		c.Redis = redis.New(conf)
 		c.Locker = lock.New(c.Redis)
+		c.Redsync = redsync.New(c.Redis)
 	}
 
 	c.initMQ(conf)

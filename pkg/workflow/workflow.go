@@ -102,8 +102,8 @@ func (w *WorkflowExecutor[T]) runWorkflow(ctx context.Context, wf struct{ Workfl
 		return false
 	}
 
-	lock, errObtainLock := w.container.Locker.Obtain(ctx, wf.ID, WF_DEFAULT_TIMEOUT, nil)
-	defer lock.Release(ctx)
+	lockMutex, errObtainLock := w.container.Redsync.TryLock(ctx, wf.ID, WF_DEFAULT_TIMEOUT)
+	defer w.container.Redsync.Unlock(lockMutex)
 
 	if errObtainLock != nil {
 		w.logger.Error(errObtainLock)
